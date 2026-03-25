@@ -227,7 +227,7 @@ class CognitiveEmitRequest(BaseModel):
     session_id: str
     model_response: ModelResponse
     model_metadata: ModelMetadata
-    governor_context: GovernorContext = Field(default_factory=GovernorContext)
+    governor_context: GovernorContext
 
 class GenerateRequest(BaseModel):
     prompt: str
