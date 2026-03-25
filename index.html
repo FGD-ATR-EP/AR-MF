@@ -260,7 +260,7 @@
 <body>
   <canvas id="display-layer"></canvas>
   <canvas id="memory-layer"></canvas>
-  <input id="file-input" type="file" />
+  <input id="file-input" type="file" accept="image/*" />
 
   <div class="ambient-label">AETHERIUM</div>
 
@@ -336,6 +336,7 @@
     let CY = 0;
     let renderTime = 0;
     let selectedFile = null;
+    let learnedImageMemory = null;
     let recording = false;
     let lastInteractionTime = performance.now();
     let fadingOut = false;
@@ -343,6 +344,8 @@
     let targetField = [];
 
     const NUM_PHOTONS = 2600;
+    const PARTICLE_SPEED = 4.0;
+    const IMAGE_MEMORY_TTL_MS = 60 * 60 * 1000;
     const photons = [];
     const touchBursts = [];
 
@@ -468,6 +471,81 @@
       targetField = points.length ? points : [];
     }
 
+    function rememberImagePattern(pattern) {
+      learnedImageMemory = {
+        ...pattern,
+        learnedAt: Date.now(),
+        expiresAt: Date.now() + IMAGE_MEMORY_TTL_MS
+      };
+    }
+
+    function getImagePatternMemory() {
+      if (!learnedImageMemory) return null;
+      if (Date.now() > learnedImageMemory.expiresAt) {
+        learnedImageMemory = null;
+        return null;
+      }
+      return learnedImageMemory;
+    }
+
+    function buildFieldFromImage(imageBitmap) {
+      memCtx.clearRect(0, 0, W, H);
+      const fit = Math.min(W / imageBitmap.width, H / imageBitmap.height);
+      const drawW = Math.max(1, Math.floor(imageBitmap.width * fit));
+      const drawH = Math.max(1, Math.floor(imageBitmap.height * fit));
+      const offsetX = Math.floor((W - drawW) * 0.5);
+      const offsetY = Math.floor((H - drawH) * 0.5);
+      memCtx.drawImage(imageBitmap, offsetX, offsetY, drawW, drawH);
+
+      const img = memCtx.getImageData(0, 0, W, H).data;
+      const points = [];
+      const step = Math.max(2, Math.floor(Math.min(W, H) / 220));
+      for (let y = 0; y < H; y += step) {
+        for (let x = 0; x < W; x += step) {
+          const idx = (y * W + x) * 4;
+          const alpha = img[idx + 3];
+          if (alpha < 24) continue;
+          const r = img[idx];
+          const g = img[idx + 1];
+          const b = img[idx + 2];
+          const brightness = (r + g + b) / 3;
+          if (brightness < 12) continue;
+          points.push({ x, y, color: [r, g, b] });
+        }
+      }
+
+      if (!points.length) return null;
+
+      const average = points.reduce((acc, p) => {
+        acc[0] += p.color[0];
+        acc[1] += p.color[1];
+        acc[2] += p.color[2];
+        return acc;
+      }, [0, 0, 0]);
+      const n = points.length;
+
+      return {
+        targetField: points,
+        averageColor: average.map(v => Math.round(v / n)),
+        structure: { width: imageBitmap.width, height: imageBitmap.height, sampled_points: points.length }
+      };
+    }
+
+    async function analyzeAttachedImage(file) {
+      if (!file || !file.type.startsWith('image/')) return null;
+      try {
+        const bitmap = await createImageBitmap(file);
+        const pattern = buildFieldFromImage(bitmap);
+        bitmap.close();
+        if (!pattern) return null;
+        rememberImagePattern(pattern);
+        return pattern;
+      } catch (error) {
+        console.warn('[AETHERIUM][image-analysis-failed]', error);
+        return null;
+      }
+    }
+
     async function deliverMessage(message) {
       const payload = { message, file_name: selectedFile ? selectedFile.name : null, source: 'homepage' };
       try {
@@ -497,7 +575,12 @@
       setStatus('กำลังส่งข้อความ...');
       markInteraction();
 
-      buildMessageField(text || 'FILE');
+      const imageMemory = getImagePatternMemory();
+      if (imageMemory?.targetField?.length) {
+        targetField = imageMemory.targetField;
+      } else {
+        buildMessageField(text || 'FILE');
+      }
       const result = await deliverMessage(text || '[file-only]');
 
       if (result.ok) {
@@ -525,6 +608,7 @@
       const idleMs = performance.now() - lastInteractionTime;
       if (idleMs > 5000) fadingOut = true;
       visibilityStrength = clamp(visibilityStrength + (fadingOut ? -0.008 : 0.01), 0.08, 1);
+      getImagePatternMemory();
 
       ctx.fillStyle = `rgba(2, 2, 5, ${cfg.trail})`;
       ctx.fillRect(0, 0, W, H);
@@ -549,8 +633,8 @@
 
         p.vx *= 0.91;
         p.vy *= 0.91;
-        p.x += p.vx;
-        p.y += p.vy;
+        p.x += p.vx * PARTICLE_SPEED;
+        p.y += p.vy * PARTICLE_SPEED;
 
         if (p.x < -20) p.x = W + 20;
         else if (p.x > W + 20) p.x = -20;
@@ -567,12 +651,19 @@
     }
 
     attachBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', async () => {
       selectedFile = fileInput.files?.[0] || null;
       if (selectedFile) {
         fileNameEl.textContent = `${selectedFile.name} · ${Math.max(1, Math.round(selectedFile.size / 1024))} KB`;
         fileChip.classList.add('active');
-        markInteraction('แนบไฟล์แล้ว พร้อมส่ง');
+        const imagePattern = await analyzeAttachedImage(selectedFile);
+        if (imagePattern?.targetField?.length) {
+          targetField = imagePattern.targetField;
+          const [r, g, b] = imagePattern.averageColor;
+          markInteraction(`วิเคราะห์ภาพแล้ว · โครงสร้าง ${imagePattern.structure.sampled_points} จุด · สีเฉลี่ย rgb(${r}, ${g}, ${b}) · จำ 1 ชม.`);
+        } else {
+          markInteraction('แนบไฟล์แล้ว พร้อมส่ง');
+        }
       } else {
         fileChip.classList.remove('active');
       }
@@ -582,6 +673,7 @@
       selectedFile = null;
       fileInput.value = '';
       fileChip.classList.remove('active');
+      learnedImageMemory = null;
       markInteraction('ลบไฟล์แนบแล้ว');
     });
 
