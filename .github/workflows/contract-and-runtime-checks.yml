@@ -12,9 +12,19 @@ permissions:
   contents: read
 
 jobs:
+  ecosystem-compatibility-checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lint ecosystem memory + contract impact checklist
+        run: python tools/ci/ecosystem_compatibility_check.py --check-pr-body
+
   contract-checker:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    needs: ecosystem-compatibility-checklist
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,7 +43,7 @@ jobs:
 
   runtime-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    needs: ecosystem-compatibility-checklist
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

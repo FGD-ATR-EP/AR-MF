@@ -260,7 +260,7 @@
 <body>
   <canvas id="display-layer"></canvas>
   <canvas id="memory-layer"></canvas>
-  <input id="file-input" type="file" />
+  <input id="file-input" type="file" accept="image/*" />
 
   <div class="ambient-label">AETHERIUM</div>
 
@@ -314,28 +314,11 @@
   </div>
 
   <script>
-    // ------------------------------------------------------------
-    // AETHERIUM Light UI
-    // ------------------------------------------------------------
-    // โค้ดนี้ถูกออกแบบให้มีเพียง “ร่างกายของแสง” เต็มจอ และแถบแชทด้านล่าง
-    // โดยไม่มี HUD หรือ panel วิเคราะห์อื่น ๆ
-    //
-    // พฤติกรรมหลักที่เพิ่มเข้ามา:
-    // 1) แสงตั้งต้นเป็นทรงกลมเคลื่อนไหวในโหมด standby
-    // 2) เมื่อไม่มีการใช้งานเกิน 5 วินาที แสงจะค่อย ๆ สลายหายไป
-    // 3) เมื่อแตะหน้าจอ แสงจะกลับมาปรากฏและ “แตกตัว” จากจุดสัมผัส
-    // 4) รองรับการเอียงอุปกรณ์ผ่าน DeviceOrientationEvent
-    //    โดยอนุภาคจะไหลไปตามแรงโน้มเอียงนั้น
-    // ------------------------------------------------------------
-
     const display = document.getElementById('display-layer');
     const ctx = display.getContext('2d', { alpha: false });
-
-    // memory-layer ใช้เป็นพื้นที่วาดข้อความชั่วคราวเพื่อแปลงข้อความเป็น field ของอนุภาค
     const memCanvas = document.getElementById('memory-layer');
     const memCtx = memCanvas.getContext('2d', { willReadFrequently: true });
 
-    // ส่วนควบคุมด้านล่างทั้งหมด
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
     const attachBtn = document.getElementById('attach-btn');
@@ -347,370 +330,390 @@
     const fileRemoveBtn = document.getElementById('file-remove');
     const statusLine = document.getElementById('status-line');
 
-    // ขนาด viewport และศูนย์กลางฉาก
     let W = 0;
     let H = 0;
     let CX = 0;
     let CY = 0;
-
-    // time accumulator ใช้ขับ animation แบบต่อเนื่อง
     let renderTime = 0;
-
-    // การจัดการ input ของผู้ใช้
     let selectedFile = null;
+    let learnedImageMemory = null;
     let recording = false;
-
-    // เวลาปฏิสัมพันธ์ล่าสุด ใช้ตัดสินว่า idle เกิน 5 วินาทีหรือยัง
     let lastInteractionTime = performance.now();
-
-    // สถานะว่าแสงกำลังค่อย ๆ หายไปอยู่หรือไม่
     let fadingOut = false;
-
-    // ความแรงรวมของการมองเห็นแสงทั้งระบบ (0 = หาย, 1 = เต็ม)
     let visibilityStrength = 1;
-
-    // ตัวเก็บแรงกระตุ้นจากการแตะหน้าจอ
-    // เมื่อมีการแตะ เราจะใส่ burst ชั่วคราว เพื่อให้แสง “แตกตัว” รอบจุดสัมผัส
-    const touchBursts = [];
-
-    // ตัวเก็บทิศทางเอียงของอุปกรณ์
-    // tiltX = แรงดึงแนวนอน, tiltY = แรงดึงแนวตั้ง
-    const deviceTilt = {
-      x: 0,
-      y: 0,
-      supported: false,
-      permissionRequired: typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function',
-      active: false
-    };
-
-    // จำนวนอนุภาคหลักของฉาก
-    const NUM_PHOTONS = 5200;
-    const photons = [];
-
-    // targetField คือเป้าหมายที่อนุภาคจะถูกดึงดูดเข้าไปหา
-    // หากว่าง ระบบจะกลับไปใช้รูปทรง standby sphere แทน
     let targetField = [];
 
-    // theme ใช้กำหนด behavior ของสนามแสงในแต่ละสภาวะ
+    const NUM_PHOTONS = 2600;
+    const PARTICLE_SPEED = 4.0;
+    const IMAGE_MEMORY_TTL_MS = 60 * 60 * 1000;
+    const photons = [];
+    const touchBursts = [];
+
+    const THEMES = {
+      idle: { palette: ['#031b44', '#0b4fd9', '#00b7ff', '#d8f6ff'], force: 0.021, noise: 0.08, trail: 0.08 },
+      sent: { palette: ['#00e5ff', '#ff3d81', '#ffd166'], force: 0.036, noise: 0.14, trail: 0.2 },
+      voice: { palette: ['#ff3d81', '#ffd166', '#ffffff'], force: 0.03, noise: 0.16, trail: 0.16 }
+    };
     let theme = 'idle';
 
-    // แต่ละ theme มีพารามิเตอร์ของแรงดึง สี ความฟุ้ง และ mode การไหลของอนุภาค
-    const THEMES = {
-      idle: {
-        palette: ['#031b44', '#0b4fd9', '#00b7ff', '#d8f6ff'],
-        force: 0.022,
-        noise: 0.12,
-        glow: 0.42,
-        trail: 0.07,
-        mode: 'standby'
-      },
-      sent: {
-        palette: ['#00e5ff', '#ff3d81', '#ffd166'],
-        force: 0.04,
-        noise: 0.18,
-        glow: 0.62,
-        trail: 0.22,
-        mode: 'message'
-      },
-      voice: {
-        palette: ['#ff3d81', '#ffd166', '#ffffff'],
-        force: 0.03,
-        noise: 0.22,
-        glow: 0.56,
-        trail: 0.18,
-        mode: 'voice'
-      }
-    };
-
-    // ------------------------------------------------------------
-    // Utility / Layout
-    // ------------------------------------------------------------
+    function setStatus(text) { statusLine.textContent = text; }
+    function setTheme(nextTheme) { theme = nextTheme; }
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
     function resize() {
-      // ปรับ canvas ให้ตรงกับ viewport จริงทุกครั้งที่หน้าจอเปลี่ยนขนาด
       W = display.width = window.innerWidth;
       H = display.height = window.innerHeight;
       memCanvas.width = W;
       memCanvas.height = H;
       CX = W * 0.5;
       CY = H * 0.5;
-      console.log('[AETHERIUM][resize]', { width: W, height: H, centerX: CX, centerY: CY });
-    }
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function nowMs() {
-      return performance.now();
-    }
-
-    function markInteraction(reasonText) {
-      // ฟังก์ชันนี้ถูกเรียกเมื่อผู้ใช้แตะหน้าจอ พิมพ์ข้อความ กดปุ่ม ฯลฯ
-      // เพื่อรีเซ็ตตัวจับเวลา idle และปลุกแสงกลับมา
-      lastInteractionTime = nowMs();
-      fadingOut = false;
-      visibilityStrength = Math.min(1, visibilityStrength + 0.14);
-      console.log('[AETHERIUM][interaction]', {
-        reason: reasonText || 'no-reason',
-        lastInteractionTime,
-        visibilityStrength,
-        fadingOut
-      });
-      if (reasonText) setStatus(reasonText);
-    }
-
-    function setStatus(text) {
-      statusLine.textContent = text;
-      console.log('[AETHERIUM][status]', text);
-    }
-
-    function setTheme(nextTheme) {
-      theme = nextTheme;
-      console.log('[AETHERIUM][theme]', { theme });
     }
 
     function autoResizeTextarea() {
       chatInput.style.height = '24px';
       chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-      console.log('[AETHERIUM][textarea-resize]', {
-        valueLength: chatInput.value.length,
-        height: chatInput.style.height
-      });
     }
 
-    // ------------------------------------------------------------
-    // Color helpers
-    // ------------------------------------------------------------
+    function markInteraction(reasonText) {
+      lastInteractionTime = performance.now();
+      fadingOut = false;
+      visibilityStrength = Math.min(1, visibilityStrength + 0.14);
+      if (reasonText) setStatus(reasonText);
+    }
+
+    function initPhotons() {
+      photons.length = 0;
+      for (let i = 0; i < NUM_PHOTONS; i++) {
+        photons.push({
+          x: CX + (Math.random() - 0.5) * W * 0.25,
+          y: CY + (Math.random() - 0.5) * H * 0.25,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: (Math.random() - 0.5) * 0.8
+        });
+      }
+    }
 
     function hexToRgb(hex) {
       const v = hex.replace('#', '');
       const full = v.length === 3 ? v.split('').map(s => s + s).join('') : v;
-      return [
-        parseInt(full.slice(0, 2), 16),
-        parseInt(full.slice(2, 4), 16),
-        parseInt(full.slice(4, 6), 16)
-      ];
+      return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
     }
 
     function paletteColor(t, palette) {
-      // ไล่สีระหว่างสีติดกันใน palette เพื่อให้แสงดูไม่แข็งเกินไป
       const a = hexToRgb(palette[Math.floor(t * palette.length) % palette.length]);
       const b = hexToRgb(palette[(Math.floor(t * palette.length) + 1) % palette.length]);
       const m = (Math.sin(t * Math.PI * 2) + 1) * 0.5;
-      return [
-        a[0] + (b[0] - a[0]) * m,
-        a[1] + (b[1] - a[1]) * m,
-        a[2] + (b[2] - a[2]) * m
-      ];
+      return [a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m];
     }
-
-    // ------------------------------------------------------------
-    // Standby sphere field
-    // ------------------------------------------------------------
 
     function getStandbyTarget(index) {
-      // แบ่งสัดส่วนอนุภาคเป็น 3 ชั้น:
-      // 1) core = แกนทรงกลมกลาง
-      // 2) ring = วงแหวนสว่างรอบแกน
-      // 3) arms = แขนเกลียวภายนอก
       const t = index / NUM_PHOTONS;
-      const pulse = 1 + Math.sin(renderTime * 1.35) * 0.05;
-
-      const coreRadius = Math.min(W, H) * 0.055 * pulse;
-      const ringRadius = Math.min(W, H) * 0.13 * pulse;
-      const armRadius = Math.min(W, H) * 0.34 * pulse;
-
-      let x = CX;
-      let y = CY;
-      let color;
-
-      if (t < 0.18) {
-        // -----------------------------
-        // CORE: จุดกำเนิดทรงกลมสว่าง
-        // -----------------------------
-        const localT = t / 0.18;
-        const a = localT * Math.PI * 2 * 6 + renderTime * 1.8;
-        const r = Math.sqrt(localT) * coreRadius;
-
-        x = CX + Math.cos(a) * r;
-        y = CY + Math.sin(a) * r;
-
-        color = paletteColor(localT, ['#4cc9ff', '#dffaff', '#7ae8ff']);
-      } else if (t < 0.42) {
-        // -----------------------------------
-        // RING: วงแหวนเรืองแสงรอบจุดศูนย์กลาง
-        // -----------------------------------
-        const localT = (t - 0.18) / 0.24;
-        const a = localT * Math.PI * 2;
-        const wobble = 1 + Math.sin(a * 6 + renderTime * 2.2) * 0.04;
-
-        x = CX + Math.cos(a + renderTime * 0.85) * ringRadius * wobble;
-        y = CY + Math.sin(a + renderTime * 0.85) * ringRadius * wobble * 0.92;
-
-        color = paletteColor(localT, ['#8eeeff', '#ffffff', '#36c6ff']);
-      } else {
-        // -------------------------------------------------
-        // ARMS: แขนเกลียวภายนอกแบบในภาพ อนุภาคจะหมุนวนเข้าหาศูนย์
-        // -------------------------------------------------
-        const localT = (t - 0.42) / 0.58;
-
-        const armCount = 4;
-        const armIndex = index % armCount;
-
-        const radius = localT * armRadius;
-
-        const spiralAngle =
-          localT * Math.PI * 7.5 +
-          armIndex * (Math.PI * 2 / armCount) +
-          renderTime * 0.95;
-
-        const curl = Math.sin(localT * 18 - renderTime * 1.4 + armIndex) * 0.16;
-
-        x = CX + Math.cos(spiralAngle + curl) * radius;
-        y = CY + Math.sin(spiralAngle + curl) * radius * 0.88;
-
-        color = paletteColor(localT, ['#0a47c9', '#00b7ff', '#d8f6ff']);
-      }
-
-      return { x, y, color };
-    }
-
-    function getVortexFlow(x, y) {
-      // คำนวณเวกเตอร์รอบศูนย์กลางเพื่อให้แสงหมุนวนตลอดเวลา
-      const dx = x - CX;
-      const dy = y - CY;
-      const dist = Math.hypot(dx, dy) || 1;
-
-      // เวกเตอร์สัมผัสวงกลม (tangential) สำหรับการหมุน
-      const tx = -dy / dist;
-      const ty = dx / dist;
-
-      // เวกเตอร์ดึงเข้าศูนย์กลางเล็กน้อย เพื่อให้เกิดลักษณะวังวน
-      const ix = -dx / dist;
-      const iy = -dy / dist;
-
-      // ใกล้แกนกลางให้หมุนช้าลงนิดหนึ่ง ปลายแขนให้พลิ้วกว่า
-      const swirl = Math.min(1.4, 0.35 + dist / (Math.min(W, H) * 0.2));
-      const inward = Math.max(0.06, 0.22 - dist / (Math.min(W, H) * 1.4));
-
+      const angle = t * Math.PI * 16 + renderTime * 0.95;
+      const radius = Math.min(W, H) * (0.05 + t * 0.3);
       return {
-        fx: tx * swirl + ix * inward,
-        fy: ty * swirl + iy * inward
+        x: CX + Math.cos(angle) * radius,
+        y: CY + Math.sin(angle) * radius * 0.86,
+        color: paletteColor(t, THEMES.idle.palette)
       };
     }
 
-    function clearTargetField() {
-      // ถ้าไม่มีข้อความหรือ target ภายนอก ให้กลับไปใช้ standby sphere เสมอ
-      targetField = [];
-      setTheme(recording ? 'voice' : 'idle');
-      console.log('[AETHERIUM][target-field-cleared]', { recording, theme, targetCount: targetField.length });
-    }
-
-    // ------------------------------------------------------------
-    // Touch burst system
-    // ------------------------------------------------------------
-
     function addTouchBurst(x, y) {
-      // touch burst ทำให้เกิดการแตกตัวของอนุภาคจากจุดแตะ
-      // ใช้เป็นทั้ง feedback สัมผัส และใช้ปลุกแสงเมื่ออยู่ในภาวะ fade out
-      touchBursts.push({
-        x,
-        y,
-        bornAt: renderTime,
-        life: 1.2,
-        strength: 1.2
-      });
-
-      // จำกัดจำนวน burst เพื่อไม่ให้ array โตเรื่อย ๆ
-      if (touchBursts.length > 8) {
-        touchBursts.shift();
-      }
-
-      console.log('[AETHERIUM][touch-burst-added]', {
-        x,
-        y,
-        burstCount: touchBursts.length,
-        renderTime
-      });
+      touchBursts.push({ x, y, bornAt: renderTime, life: 1.15, strength: 1.2 });
+      if (touchBursts.length > 6) touchBursts.shift();
     }
 
     function applyTouchBursts(photon) {
-      // คืนแรงจาก burst แต่ละลูกให้กับอนุภาค
-      // ถ้าอนุภาคอยู่ใกล้จุดสัมผัส จะถูกผลักออกจากจุดนั้น
       let fx = 0;
       let fy = 0;
-
       for (const burst of touchBursts) {
         const age = renderTime - burst.bornAt;
         if (age > burst.life) continue;
-
         const dx = photon.x - burst.x;
         const dy = photon.y - burst.y;
         const dist = Math.hypot(dx, dy) || 1;
-
-        // falloff แบบค่อย ๆ ลดตามระยะและอายุของ burst
         const ageFactor = 1 - age / burst.life;
-        const falloff = Math.max(0, 1 - dist / 180) * ageFactor * burst.strength;
-
-        fx += (dx / dist) * falloff * 1.4;
-        fy += (dy / dist) * falloff * 1.4;
+        const falloff = Math.max(0, 1 - dist / 170) * ageFactor * burst.strength;
+        fx += (dx / dist) * falloff;
+        fy += (dy / dist) * falloff;
       }
-
       return { fx, fy };
     }
 
     function pruneTouchBursts() {
-      // ลบ burst ที่หมดอายุแล้วทุกเฟรม
-      const before = touchBursts.length;
       for (let i = touchBursts.length - 1; i >= 0; i--) {
-        if (renderTime - touchBursts[i].bornAt > touchBursts[i].life) {
-          touchBursts.splice(i, 1);
+        if (renderTime - touchBursts[i].bornAt > touchBursts[i].life) touchBursts.splice(i, 1);
+      }
+    }
+
+    function buildMessageField(text) {
+      const value = (text || '').trim();
+      if (!value) {
+        targetField = [];
+        return;
+      }
+      memCtx.clearRect(0, 0, W, H);
+      const fontSize = clamp(Math.floor(Math.min(W * 0.08, H * 0.14)), 34, 94);
+      memCtx.fillStyle = '#fff';
+      memCtx.textAlign = 'center';
+      memCtx.textBaseline = 'middle';
+      memCtx.font = `700 ${fontSize}px "JetBrains Mono", monospace`;
+      memCtx.fillText(value.slice(0, 72), CX, CY);
+
+      const img = memCtx.getImageData(0, 0, W, H).data;
+      const points = [];
+      const step = Math.max(4, Math.floor(Math.min(W, H) / 160));
+      for (let y = 0; y < H; y += step) {
+        for (let x = 0; x < W; x += step) {
+          const alpha = img[(y * W + x) * 4 + 3];
+          if (alpha > 80) points.push({ x, y });
         }
       }
-      if (before !== touchBursts.length) {
-        console.log('[AETHERIUM][touch-burst-pruned]', { before, after: touchBursts.length, renderTime });
+      targetField = points.length ? points : [];
+    }
+
+    function rememberImagePattern(pattern) {
+      learnedImageMemory = {
+        ...pattern,
+        learnedAt: Date.now(),
+        expiresAt: Date.now() + IMAGE_MEMORY_TTL_MS
+      };
+    }
+
+    function getImagePatternMemory() {
+      if (!learnedImageMemory) return null;
+      if (Date.now() > learnedImageMemory.expiresAt) {
+        learnedImageMemory = null;
+        return null;
+      }
+      return learnedImageMemory;
+    }
+
+    function buildFieldFromImage(imageBitmap) {
+      memCtx.clearRect(0, 0, W, H);
+      const fit = Math.min(W / imageBitmap.width, H / imageBitmap.height);
+      const drawW = Math.max(1, Math.floor(imageBitmap.width * fit));
+      const drawH = Math.max(1, Math.floor(imageBitmap.height * fit));
+      const offsetX = Math.floor((W - drawW) * 0.5);
+      const offsetY = Math.floor((H - drawH) * 0.5);
+      memCtx.drawImage(imageBitmap, offsetX, offsetY, drawW, drawH);
+
+      const img = memCtx.getImageData(0, 0, W, H).data;
+      const points = [];
+      const step = Math.max(2, Math.floor(Math.min(W, H) / 220));
+      for (let y = 0; y < H; y += step) {
+        for (let x = 0; x < W; x += step) {
+          const idx = (y * W + x) * 4;
+          const alpha = img[idx + 3];
+          if (alpha < 24) continue;
+          const r = img[idx];
+          const g = img[idx + 1];
+          const b = img[idx + 2];
+          const brightness = (r + g + b) / 3;
+          if (brightness < 12) continue;
+          points.push({ x, y, color: [r, g, b] });
+        }
+      }
+
+      if (!points.length) return null;
+
+      const average = points.reduce((acc, p) => {
+        acc[0] += p.color[0];
+        acc[1] += p.color[1];
+        acc[2] += p.color[2];
+        return acc;
+      }, [0, 0, 0]);
+      const n = points.length;
+
+      return {
+        targetField: points,
+        averageColor: average.map(v => Math.round(v / n)),
+        structure: { width: imageBitmap.width, height: imageBitmap.height, sampled_points: points.length }
+      };
+    }
+
+    async function analyzeAttachedImage(file) {
+      if (!file || !file.type.startsWith('image/')) return null;
+      try {
+        const bitmap = await createImageBitmap(file);
+        const pattern = buildFieldFromImage(bitmap);
+        bitmap.close();
+        if (!pattern) return null;
+        rememberImagePattern(pattern);
+        return pattern;
+      } catch (error) {
+        console.warn('[AETHERIUM][image-analysis-failed]', error);
+        return null;
       }
     }
 
-    // ------------------------------------------------------------
-    // Device orientation support
-    // ------------------------------------------------------------
-
-    function handleOrientation(event) {
-      // beta = เอียงหน้า/หลัง, gamma = เอียงซ้าย/ขวา
-      // เราแปลงค่าองศาให้อยู่ในช่วงประมาณ -1 ถึง 1 เพื่อใช้เป็นแรงโน้มเอียงในสนามแสง
-      if (typeof event.beta !== 'number' || typeof event.gamma !== 'number') return;
-
-      deviceTilt.supported = true;
-      deviceTilt.active = true;
-
-      // จำกัดช่วงเพื่อไม่ให้แรงเอียงรุนแรงเกินไปบนบางอุปกรณ์
-      const gamma = clamp(event.gamma, -45, 45);
-      const beta = clamp(event.beta, -45, 45);
-
-      deviceTilt.x = gamma / 45;
-      deviceTilt.y = beta / 45;
-
-      console.log('[AETHERIUM][orientation]', {
-        beta: event.beta,
-        gamma: event.gamma,
-        normalizedX: deviceTilt.x,
-        normalizedY: deviceTilt.y
-      });
+    async function deliverMessage(message) {
+      const payload = { message, file_name: selectedFile ? selectedFile.name : null, source: 'homepage' };
+      try {
+        const response = await fetch('/api/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { ok: true };
+      } catch (err) {
+        console.warn('[AETHERIUM][deliver-fallback]', err);
+        return { ok: false };
+      }
     }
 
-    async function enableDeviceOrientationIfNeeded() {
-      // iOS บางเวอร์ชันต้องขอ permission ผ่าน gesture ก่อน
-      if (typeof DeviceOrientationEvent === 'undefined') {
-        console.log('[AETHERIUM][orientation]', 'DeviceOrientationEvent not available');
+    async function submitMessage() {
+      const text = chatInput.value.trim();
+      if (!text && !selectedFile) {
+        setStatus('โปรดพิมพ์ข้อความหรือแนบไฟล์ก่อนส่ง');
+        markInteraction();
         return;
       }
 
-      try {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-          const result = await DeviceOrientationEvent.requestPermission();
-          console.log('[AETHERIUM][orientation-permission]', { result });
-          if (result === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation, true);
-        
+      sendBtn.disabled = true;
+      setTheme(recording ? 'voice' : 'sent');
+      setStatus('กำลังส่งข้อความ...');
+      markInteraction();
+
+      const imageMemory = getImagePatternMemory();
+      if (imageMemory?.targetField?.length) {
+        targetField = imageMemory.targetField;
+      } else {
+        buildMessageField(text || 'FILE');
+      }
+      const result = await deliverMessage(text || '[file-only]');
+
+      if (result.ok) {
+        setStatus('ส่งข้อความสำเร็จ');
+      } else {
+        setStatus('ส่งผ่าน API ไม่สำเร็จ แสดงผลในโหมดจำลองแทน');
+      }
+
+      chatInput.value = '';
+      autoResizeTextarea();
+      selectedFile = null;
+      fileInput.value = '';
+      fileChip.classList.remove('active');
+
+      window.setTimeout(() => {
+        if (!recording) setTheme('idle');
+      }, 1800);
+      sendBtn.disabled = false;
+    }
+
+    function tick(ts) {
+      renderTime = ts * 0.001;
+      const cfg = THEMES[theme] || THEMES.idle;
+
+      const idleMs = performance.now() - lastInteractionTime;
+      if (idleMs > 5000) fadingOut = true;
+      visibilityStrength = clamp(visibilityStrength + (fadingOut ? -0.008 : 0.01), 0.08, 1);
+      getImagePatternMemory();
+
+      ctx.fillStyle = `rgba(2, 2, 5, ${cfg.trail})`;
+      ctx.fillRect(0, 0, W, H);
+
+      for (let i = 0; i < photons.length; i++) {
+        const p = photons[i];
+        const target = targetField.length ? targetField[i % targetField.length] : getStandbyTarget(i);
+
+        const dx = target.x - p.x;
+        const dy = target.y - p.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const force = cfg.force + (dist > 80 ? 0.005 : 0);
+        p.vx += (dx / dist) * force;
+        p.vy += (dy / dist) * force;
+
+        const burst = applyTouchBursts(p);
+        p.vx += burst.fx * 0.2;
+        p.vy += burst.fy * 0.2;
+
+        p.vx += (Math.random() - 0.5) * cfg.noise;
+        p.vy += (Math.random() - 0.5) * cfg.noise;
+
+        p.vx *= 0.91;
+        p.vy *= 0.91;
+        p.x += p.vx * PARTICLE_SPEED;
+        p.y += p.vy * PARTICLE_SPEED;
+
+        if (p.x < -20) p.x = W + 20;
+        else if (p.x > W + 20) p.x = -20;
+        if (p.y < -20) p.y = H + 20;
+        else if (p.y > H + 20) p.y = -20;
+
+        const [r, g, b] = target.color || paletteColor((i / NUM_PHOTONS) + renderTime * 0.01, cfg.palette);
+        ctx.fillStyle = `rgba(${r|0}, ${g|0}, ${b|0}, ${0.18 + visibilityStrength * 0.72})`;
+        ctx.fillRect(p.x, p.y, 1.8, 1.8);
+      }
+
+      pruneTouchBursts();
+      requestAnimationFrame(tick);
+    }
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      selectedFile = fileInput.files?.[0] || null;
+      if (selectedFile) {
+        fileNameEl.textContent = `${selectedFile.name} · ${Math.max(1, Math.round(selectedFile.size / 1024))} KB`;
+        fileChip.classList.add('active');
+        const imagePattern = await analyzeAttachedImage(selectedFile);
+        if (imagePattern?.targetField?.length) {
+          targetField = imagePattern.targetField;
+          const [r, g, b] = imagePattern.averageColor;
+          markInteraction(`วิเคราะห์ภาพแล้ว · โครงสร้าง ${imagePattern.structure.sampled_points} จุด · สีเฉลี่ย rgb(${r}, ${g}, ${b}) · จำ 1 ชม.`);
+        } else {
+          markInteraction('แนบไฟล์แล้ว พร้อมส่ง');
+        }
+      } else {
+        fileChip.classList.remove('active');
+      }
+    });
+
+    fileRemoveBtn.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileChip.classList.remove('active');
+      learnedImageMemory = null;
+      markInteraction('ลบไฟล์แนบแล้ว');
+    });
+
+    voiceBtn.addEventListener('click', () => {
+      recording = !recording;
+      voiceBtn.classList.toggle('recording', recording);
+      setTheme(recording ? 'voice' : 'idle');
+      markInteraction(recording ? 'โหมดเสียงพร้อมใช้งาน' : 'ปิดโหมดเสียง');
+    });
+
+    settingsBtn.addEventListener('click', () => {
+      markInteraction('ตั้งค่าจะพร้อมใช้งานในเวอร์ชันถัดไป');
+    });
+
+    sendBtn.addEventListener('click', submitMessage);
+
+    chatInput.addEventListener('input', () => {
+      autoResizeTextarea();
+      markInteraction();
+    });
+
+    chatInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        submitMessage();
+      }
+    });
+
+    display.addEventListener('pointerdown', (event) => {
+      addTouchBurst(event.clientX, event.clientY);
+      markInteraction('ปลุกแสงแล้ว');
+    });
+
+    window.addEventListener('resize', resize);
+
+    resize();
+    autoResizeTextarea();
+    initPhotons();
+    setStatus('SPHERE STANDBY · พิมพ์ข้อความแล้วกดส่งได้ทันที');
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

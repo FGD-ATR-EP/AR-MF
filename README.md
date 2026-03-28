@@ -562,7 +562,29 @@ This structure is designed for deterministic local/runtime testing. For producti
 
 Current frontend/kernel runtime telemetry mirrors the proposed control-plane observability fields and now tracks `fps`, `dropped_frames`, `particle_count`, `average_velocity`, `last_ai_command`, and `policy_block_count` before forwarding or persisting samples.
 
+The runtime governor also includes a `psycho_safety_gate` stage that now tracks cadence/flicker/luminance time-series samples, enforces a WCAG-aligned cadence ceiling (`<= 3` flashes/sec), applies IEEE 1789-inspired low-frequency flicker mitigation, and contains gradual frequency drift patterns before policy-block evaluation.
+
 ---
+
+
+## Tiny Reasoning + Light-Text Prototype
+
+A compact prototype is available at `tools/tiny_reasoning_light_model.py` for teams that want a RAM-bounded reasoning module plus deterministic light-text output.
+
+- Trains from specialized samples (`SpecializedSample`) instead of full-scale LLM pretraining.
+- Uses a compact intent scorer to keep memory footprint small (`ram_budget_mb` hint for deployment planning).
+- Emits `matrix_5x7` light frames with safety profile clamps (`max_fps`, `max_brightness`, `flicker_hz_cap`) to support low-sensory/no-flicker display modes.
+
+Quick smoke run:
+
+```bash
+python - <<'PY2'
+from tools.tiny_reasoning_light_model import bootstrap_demo_model
+m = bootstrap_demo_model()
+print(m.respond("summarize runtime governor pipeline"))
+print(m.render_light_frames("HI")[0])
+PY2
+```
 
 ## Validation & Tests
 
@@ -748,3 +770,21 @@ Gateway: `http://localhost:8000` (เอกสาร API ที่ `/docs`)
   เพิ่มสัญญาเสริมด้าน anchor/depth/occlusion แยกจาก `intent_state` หลัก เพื่อรองรับ WebXR/OpenXR โดยไม่กระทบ ABI ปัจจุบัน
 
 ---
+
+---
+
+## AETHERIUM Ecosystem Memory Ledger
+
+To preserve build context across implementation rounds, this repository records first-party ecosystem dependencies and partner projects as a persistent memory note.
+
+Canonical ecosystem repositories (provided by maintainer context):
+
+1. The Book of Formation – AETHERIUM GENESIS: https://github.com/FGD-ATR-EP/The-Book-of-Formation-AETHERIUM-GENESIS
+2. PRGX-AG: https://github.com/FGD-ATR-EP/PRGX-AG
+3. LOGENESIS-1.5: https://github.com/FGD-ATR-EP/LOGENESIS-1.5
+4. BioVisionVS1.1: https://github.com/FGD-ATR-EP/BioVisionVS1.1
+
+Working agreement for future changes:
+- Treat these repositories as part of the AETHERIUM native ecosystem context.
+- Prefer contract-compatible evolution paths that keep Manifest and AetherBus-Tachyon semantically aligned.
+- Record architecture assumptions in-repo before implementing ABI-impacting changes.
