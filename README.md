@@ -690,25 +690,30 @@ This project is released under the MIT License.
 
 ## เอกสารภาษาไทย (Thai Documentation)
 
-### ภาพรวม
-Aetherium Manifest คือเลเยอร์แสดงผลฝั่ง Frontend ของระบบ Aetherium โดยแปลงเจตนา (intent), ความมั่นใจ และสถานะ runtime ของ AI ให้เป็นภาพเคลื่อนไหวเชิงนามธรรมที่ผู้ใช้รับรู้และโต้ตอบได้
+## Cognitive DSL API Gateway (New)
+
+มีการเพิ่มโครงสร้าง API Gateway ตัวอย่างในโฟลเดอร์ `api_gateway/` เพื่อรองรับการรับ Cognitive DSL จากโมเดลภายนอกตาม success metrics:
+
+- `POST /api/v1/cognitive/emit`
+- `POST /api/v1/cognitive/validate`
+- `GET /health`
+- `WS /ws/cognitive-stream`
+
+พร้อมตัวอย่าง payload, startup script และ middleware validation ตามกฎ Firma.
+
+
+## Prototype: Manifestation Deck (Implemented)
 
 ### โครงสร้างระบบ
 - **AETHERIUM-GENESIS (Backend):** คิด วิเคราะห์ และสร้าง cognitive/intent signals
 - **Aetherium Manifest (Frontend):** แสดงผลแบบเรียลไทม์และจัดการ interaction
 - **การเชื่อมต่อ:** ผ่าน API/WebSocket บน AetherBus
 
-### ความสามารถปัจจุบัน
-- ระบบแสดงผลเรียลไทม์ด้วยอนุภาคและรูปทรงตาม intent vectors
-- Voice pipeline (VAD/STT แบบ mock) + intent mapping
-- ปรับคุณภาพกราฟิกและเฟรมเรตตามประสิทธิภาพเครื่อง
-- Controls ที่เป็นมิตรต่อการเข้าถึง (Accessibility)
-- HUD ทุกหน้าต่างมีปุ่มปิด, เปิดคืนจาก Settings > Panels, ลากย้าย และย่อ/ขยายได้
-- Settings 5 แท็บ: `Display`, `Panels`, `Links`, `Language`, `Voice`
-- Display tab supports scenario presets (`Presentation`, `Meditation`, `Debug`, `Low-power`) to apply multi-setting profiles
-- มีช่องวิเคราะห์ URL ภายนอก
-- มีโครง telemetry + event bus + delta-state helper
-- รองรับ PWA (installable + service worker + asset caching)
+- **Input Deck (Glassmorphism):** bottom control deck with attachment, voice toggle, and send actions.
+- **Intent Processing:** keyword-triggered manifest mode for Thai landscape intents (`ทะเล`, `น้ำตก`, `ภูเขา`) plus `sea`.
+- **Light-Based Response:** holographic center projection + particle behavior transitions instead of chat bubbles.
+- **File Intake:** PDF/image attachment buffer with inline chip preview.
+- **Freeze Light System:** floating controls for Freeze/Save/Erase/Light Pen, voice-trigger keywords (`แช่แข็ง`, `freeze`, `บันทึก`, `ลบ`, `วาด`), frozen-point editing, and export UI for PNG plus printable PDF fallback.
 
 ### API Gateway (ต้นแบบ)
 โฟลเดอร์ `api_gateway/` มี Cognitive DSL gateway พร้อม endpoint สำหรับ emit/validate/health/websocket/telemetry/state-sync

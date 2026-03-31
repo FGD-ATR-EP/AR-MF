@@ -255,61 +255,188 @@
         font-size: 13px;
       }
     }
+
+    .floating-button {
+      position: fixed;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+      border: 1px solid var(--border-light);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: white;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .floating-button:hover {
+      transform: translateY(-2px);
+    }
+
+    #freeze-btn {
+      top: 20px;
+      border-color: #00ffff;
+      box-shadow: 0 0 16px rgba(0, 255, 255, 0.4);
+    }
+
+    #save-btn {
+      top: 74px;
+      border-color: #00ff88;
+      box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
+      display: none;
+    }
+
+    #erase-btn {
+      top: 128px;
+      border-color: #ff6688;
+      box-shadow: 0 0 16px rgba(255, 102, 136, 0.4);
+      display: none;
+    }
+
+    #pen-btn {
+      top: 182px;
+      border-color: #b68cff;
+      box-shadow: 0 0 16px rgba(182, 140, 255, 0.4);
+      display: none;
+    }
+
+    .mode-active {
+      outline: 2px solid #fff;
+    }
+
+    .document-save-ui,
+    .light-pen-ui {
+      position: fixed;
+      left: 20px;
+      bottom: 120px;
+      z-index: 40;
+      width: min(360px, calc(100% - 40px));
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      background: rgba(12, 12, 18, 0.85);
+      backdrop-filter: blur(10px);
+      color: #f3f3f3;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .save-header,
+    .pen-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .save-header h3,
+    .pen-header h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .format-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .format-option {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .format-option.selected {
+      border-color: var(--color-manifest);
+      background: rgba(255, 215, 0, 0.08);
+    }
+
+    .save-options,
+    .pen-actions,
+    .brush-controls {
+      display: flex;
+      gap: 8px;
+      padding: 0 12px 12px;
+      align-items: center;
+    }
+
+    .filename-input,
+    .save-button,
+    .pen-actions button,
+    .brush-controls input {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      padding: 10px;
+      font-family: inherit;
+    }
+
+    .filename-input {
+      flex: 1;
+    }
+
+    .save-button,
+    .pen-actions button {
+      cursor: pointer;
+    }
+
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .color-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+
+    .color-option.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    canvas.erase-mode {
+      cursor: crosshair;
+    }
+
+    canvas.draw-mode {
+      cursor: cell;
+    }
   </style>
 </head>
 <body>
-  <canvas id="display-layer"></canvas>
-  <canvas id="memory-layer"></canvas>
-  <input id="file-input" type="file" accept="image/*" />
+  <canvas id="nervous-system"></canvas>
 
-  <div class="ambient-label">AETHERIUM</div>
+  <div class="floating-button" id="freeze-btn">❄️ <span>Freeze</span></div>
+  <div class="floating-button" id="save-btn">💾 <span>Save</span></div>
+  <div class="floating-button" id="erase-btn">🗑️ <span>Erase</span></div>
+  <div class="floating-button" id="pen-btn">🖌️ <span>Light Pen</span></div>
 
-  <div class="bottom-shell">
-    <div class="chat-bar">
-      <div class="chat-top">
-        <button class="icon-btn" id="attach-btn" title="แนบไฟล์" aria-label="แนบไฟล์">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.48l10.6-10.61a4 4 0 0 1 5.66 5.66L8.7 18.12a2 2 0 1 1-2.83-2.83l9.2-9.19"/>
-          </svg>
-        </button>
-
-        <div class="composer-wrap">
-          <textarea id="chat-input" rows="1" placeholder="ส่งข้อความถึงแสง..."></textarea>
-        </div>
-
-        <button class="icon-btn" id="voice-btn" title="ข้อความเสียง" aria-label="ข้อความเสียง">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"/>
-            <path d="M19 11a7 7 0 0 1-14 0"/>
-            <path d="M12 18v4"/>
-            <path d="M8 22h8"/>
-          </svg>
-        </button>
-
-        <button class="send-btn" id="send-btn" title="ส่ง" aria-label="ส่ง">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2 11 13"/>
-            <path d="M22 2 15 22l-4-9-9-4 20-7Z"/>
-          </svg>
-        </button>
-
-        <button class="icon-btn" id="settings-btn" title="ตั้งค่า" aria-label="ตั้งค่า">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="file-chip" id="file-chip">
-        <span id="file-name">ไม่มีไฟล์</span>
-        <button class="file-remove" id="file-remove" type="button">ลบ</button>
-      </div>
-
-      <div class="chat-bottom">
-        <div class="status-line" id="status-line">SPHERE STANDBY · แตะหน้าจอเพื่อปลุกแสง</div>
-        <div class="action-row"></div>
-      </div>
+  <div id="hud-overlay">
+    <div class="stat-row">
+      <div class="stat-label"><span>ENERGY (METABOLISM)</span> <span id="val-energy">100%</span></div>
+      <div class="progress-bar-container"><div class="progress-bar" id="bar-energy"></div></div>
     </div>
   </div>
 
@@ -776,6 +903,11 @@
 
     sendBtn.addEventListener('click', submitMessage);
 
+      lightCrystallizer.drawFrozen(ctx);
+
+      document.getElementById('bar-energy').style.width = `${state.energy}%`;
+      document.getElementById('bar-energy').style.backgroundColor = config.colors[state.mode];
+      document.getElementById('bar-entropy').style.width = `${state.entropy}%`;
     chatInput.addEventListener('input', () => {
       autoResizeTextarea();
       markInteraction();
