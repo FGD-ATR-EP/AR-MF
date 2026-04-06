@@ -73,7 +73,7 @@ class BackpressureQueue:
     def pop(self) -> OutboundMessage | None:
         if not self._items:
             return None
-        return self._items.pop(0)
+        return self._items.popleft()
 
     def _trim_if_needed(self) -> None:
         while len(self._items) > self.max_items:
