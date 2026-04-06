@@ -28,6 +28,7 @@ Aetherium-Manifest UI (embodiment + cognition)
 - `11_PLATFORM_WORK_PLAN.md` — platform workstreams, backlog, rollout/rollback, and production DoD
 - `12_FULL_STACK_INTEGRATION_REPORT_TH.md` — รายงานทางการเต็มรูปแบบสำหรับการเชื่อมต่อระบบภายในและภายนอก
 - `ops/` — production operations package (dashboards, alerts, runbooks, security/privacy checks)
+  - `ops/websocket_scaling_1m_blueprint.md` — blueprint for scaling event-driven websocket/state-sync to 1M CCU (implementation-phased, non-claiming)
 - `schemas/` — versioned ABI JSON
 - `appendices/` — glossary, state machine, roadmap
 

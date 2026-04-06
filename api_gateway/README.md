@@ -9,6 +9,14 @@
 - `GET /health`
 - `WS /ws/cognitive-stream`
 
+## WebSocket scaling primitives (prototype)
+
+ไฟล์ `api_gateway/ws_scaling.py` มีตัวช่วยสำหรับงานออกแบบ production websocket scaling:
+- capacity planning สำหรับเป้าหมายระดับ 1M concurrent connections
+- shard routing ตาม room hash
+- backpressure queue แบบ state-first
+- reconnect planning ด้วย version-aware replay
+
 ## Header Requirements
 
 - `X-API-Key`
