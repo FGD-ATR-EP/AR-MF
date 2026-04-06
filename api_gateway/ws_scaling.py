@@ -60,7 +60,7 @@ class BackpressureQueue:
 
     def __init__(self, max_items: int = 128) -> None:
         self.max_items = max_items
-        self._items: list[OutboundMessage] = []
+        self._items: collections.deque[OutboundMessage] = collections.deque()
         self.dropped = 0
 
     def __len__(self) -> int:
