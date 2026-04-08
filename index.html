@@ -281,66 +281,65 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .floating-button:hover {
-      transform: translateY(-2px);
-    }
-
-    #freeze-btn {
-      top: 20px;
-      border-color: #00ffff;
-      box-shadow: 0 0 16px rgba(0, 255, 255, 0.4);
-    }
-
-    #save-btn {
-      top: 74px;
-      border-color: #00ff88;
-      box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
-    }
-
-    #erase-btn {
-      top: 128px;
-      border-color: #ff6688;
-      box-shadow: 0 0 16px rgba(255, 102, 136, 0.4);
-    }
-
-    #pen-btn {
-      top: 182px;
-      border-color: #b68cff;
-      box-shadow: 0 0 16px rgba(182, 140, 255, 0.4);
-    }
-
-    #share-btn {
-      top: 236px;
-      border-color: #ffd166;
-      box-shadow: 0 0 16px rgba(255, 209, 102, 0.4);
-    }
-
-    .mode-active {
-      outline: 2px solid #fff;
-    }
-
-    .document-save-ui,
-    .light-pen-ui {
+    #settings-panel {
       position: fixed;
-      left: 20px;
-      bottom: 120px;
-      z-index: 40;
-      width: min(360px, calc(100% - 40px));
-      border: 1px solid var(--border-light);
-      border-radius: 16px;
-      background: rgba(12, 12, 18, 0.85);
-      backdrop-filter: blur(10px);
-      color: #f3f3f3;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+      right: 68px;
+      top: 16px;
+      z-index: 42;
+      width: min(320px, calc(100vw - 24px));
+      padding: 12px;
+      display: none;
+      font-size: 12px;
     }
 
-    .save-header,
-    .pen-header {
+    body.ui-open #settings-panel {
+      display: block;
+    }
+
+    .settings-title {
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .setting-group { margin-top: 10px; }
+
+    .setting-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .seg {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .seg button {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 11px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .seg button.active {
+      border-color: rgba(0,255,255,.65);
+      color: #d0ffff;
+    }
+
+    #log {
+      right: 18px;
+      top: 284px;
+      width: 380px;
+      max-height: 46vh;
+      padding: 14px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .save-header h3,
@@ -464,11 +463,75 @@
       background: rgba(255, 255, 255, 0.08);
     }
 
-    .progress-bar {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, #00e5ff, #7dd3fc);
-      box-shadow: 0 0 18px rgba(0, 229, 255, 0.36);
+    #display-page-2 {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, rgba(0,255,255,.08), transparent 38%),
+                  radial-gradient(circle at 80% 80%, rgba(128,0,128,.12), transparent 42%),
+                  rgba(5,5,5,.72);
+      pointer-events: none;
+    }
+
+    body.display-page-2 #display-page-2 {
+      display: flex;
+    }
+
+    .display2-card {
+      width: min(760px, calc(100vw - 36px));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(10,10,14,.76);
+      backdrop-filter: blur(12px);
+      padding: 16px;
+    }
+
+    .display2-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .display2-cell {
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .mini-boxes {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mini-box {
+      min-width: 130px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(8,8,10,.76);
+      font-size: 11px;
+      display: none;
+    }
+
+    body.show-box-1 #mini-box-1,
+    body.show-box-2 #mini-box-2,
+    body.show-box-3 #mini-box-3 {
+      display: block;
+    }
+
+    .critical {
+      border-color: var(--critical) !important;
+      animation: flicker .14s infinite alternate;
     }
 
     .hud-mode {
@@ -501,23 +564,34 @@
   </style>
 </head>
 <body>
-  <canvas id="display-layer"></canvas>
-  <canvas id="memory-layer"></canvas>
-  <input type="file" id="file-input" accept="image/*" />
+  <canvas id="nervous-system"></canvas>
+  <button id="settings-toggle" aria-label="toggle settings">⚙</button>
+  <button id="chat-toggle" aria-label="toggle chat">Chat</button>
 
-  <div class="ambient-label">AETHERIUM GENESIS · หน้าแรกพร้อมใช้งาน</div>
+  <aside class="hud" id="settings-panel">
+    <div class="settings-title">SETTINGS</div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <span>Display Page</span>
+        <div class="seg" id="display-selector">
+          <button type="button" data-page="1" class="active">Page 1</button>
+          <button type="button" data-page="2">Page 2</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row"><span>Mini Box #1</span><button class="btn" id="toggle-box-1">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #2</span><button class="btn" id="toggle-box-2">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #3</span><button class="btn" id="toggle-box-3">Toggle</button></div>
+    </div>
+  </aside>
 
-  <div class="floating-button" id="freeze-btn">❄️ <span>Freeze</span></div>
-  <div class="floating-button" id="save-btn">💾 <span>Save</span></div>
-  <div class="floating-button" id="erase-btn">🗑️ <span>Erase</span></div>
-  <div class="floating-button" id="pen-btn">🖌️ <span>Light Pen</span></div>
-  <div class="floating-button" id="share-btn">🔗 <span>Share</span></div>
-
-  <div id="hud-overlay">
-    <div class="stat-row">
-      <div class="stat-label"><span>ENERGY (METABOLISM)</span> <span id="val-energy">100%</span></div>
-      <div class="progress-bar-container"><div class="progress-bar" id="bar-energy"></div></div>
-      <div class="hud-mode"><span>SYSTEM MODE</span><span id="energy-state">Stable</span></div>
+  <aside class="hud" id="status">
+    <div class="row"><strong>AETHERBUS / GUNUI STATUS</strong></div>
+    <div class="row">
+      <div class="row-head"><span>FSM STATE</span><span id="state-text">IDLE</span></div>
+      <span class="chip" id="shape-chip">shape: cloud</span>
+      <span class="chip" id="intent-chip">intent: chat</span>
     </div>
   </div>
 
@@ -556,7 +630,50 @@
       <div class="home-tip">แนบภาพเพื่อสกัดโครงสร้างแสง</div>
       <div class="home-tip">แตะพื้นที่ว่างเพื่อปลุกอนุภาค</div>
     </div>
-  </div>
+    <div class="row">
+      <div class="row-head"><span>LOAD (CPU HEAT)</span><span id="load-text">0%</span></div>
+      <div class="bar-track"><div class="bar" id="load-bar"></div></div>
+    </div>
+  </aside>
+
+  <aside class="hud" id="log"><pre id="intent-json">Intent Vector จะปรากฏที่นี่...</pre></aside>
+
+  <aside class="hud" id="conversation">
+    <div><strong>CONVERSATION CONTEXT</strong></div>
+    <div id="chat-stream"></div>
+    <div id="sources">sources: none</div>
+  </aside>
+
+  <section class="hud" id="composer">
+    <input id="intent-input" placeholder="พิมพ์ intent เช่น: ด่วน! สรุปข้อมูลให้หน่อย หรือ I feel confused and tired" />
+    <button class="btn" id="voice-btn" title="Voice chat" aria-label="voice chat">🎤</button>
+    <button class="btn" id="send-btn">Emit Intent</button>
+    <button class="btn" id="nirodha-btn">Nirodha</button>
+  </section>
+
+  <aside class="hud" id="compat">
+    <div><strong>COMPATIBILITY RENDER</strong></div>
+    <div class="compat-note" id="compat-note">mode: realtime</div>
+    <img id="compat-frame" alt="compatibility-frame" />
+  </aside>
+
+  <section id="display-page-2" aria-label="display page two">
+    <div class="display2-card">
+      <div><strong>DISPLAY PAGE 2</strong></div>
+      <div style="margin-top:6px;color:#b8daff;font-size:12px;">หน้านี้เป็นโหมดแสดงผลเพิ่มเติม โดยยังคงใช้ความสามารถระบบเดิมทั้งหมด</div>
+      <div class="display2-grid">
+        <div class="display2-cell">State: <span id="page2-state">IDLE</span></div>
+        <div class="display2-cell">Energy: <span id="page2-energy">100%</span></div>
+        <div class="display2-cell">Entropy: <span id="page2-entropy">0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mini-boxes" aria-label="mini display boxes">
+    <div class="mini-box" id="mini-box-1">Mini Box 1 : System Pulse</div>
+    <div class="mini-box" id="mini-box-2">Mini Box 2 : Intent Monitor</div>
+    <div class="mini-box" id="mini-box-3">Mini Box 3 : Source Signals</div>
+  </section>
 
   <script>
     const display = document.getElementById('display-layer');
@@ -618,57 +735,46 @@
     function setTheme(nextTheme) { theme = nextTheme; }
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-    function toIsoTs() {
-      return new Date().toISOString();
+    const refs = {
+      stateText: document.getElementById('state-text'),
+      energyText: document.getElementById('energy-text'),
+      entropyText: document.getElementById('entropy-text'),
+      loadText: document.getElementById('load-text'),
+      energyBar: document.getElementById('energy-bar'),
+      entropyBar: document.getElementById('entropy-bar'),
+      loadBar: document.getElementById('load-bar'),
+      shapeChip: document.getElementById('shape-chip'),
+      intentChip: document.getElementById('intent-chip'),
+      json: document.getElementById('intent-json'),
+      status: document.getElementById('status'),
+      compatNote: document.getElementById('compat-note'),
+      compatFrame: document.getElementById('compat-frame'),
+      chatStream: document.getElementById('chat-stream'),
+      sources: document.getElementById('sources'),
+      settingsToggle: document.getElementById('settings-toggle'),
+      chatToggle: document.getElementById('chat-toggle'),
+      displayPage2State: document.getElementById('page2-state'),
+      displayPage2Energy: document.getElementById('page2-energy'),
+      displayPage2Entropy: document.getElementById('page2-entropy')
+    };
+
+    const displayButtons = Array.from(document.querySelectorAll('#display-selector button'));
+
+    function setDisplayPage(page) {
+      document.body.classList.toggle('display-page-2', page === '2');
+      displayButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
     }
 
-    async function trackUxEvent(eventName, tags = {}) {
-      const payload = {
-        points: [{
-          metric: 'ux_event',
-          value: 1,
-          ts: toIsoTs(),
-          tags: {
-            event: eventName,
-            surface: 'homepage',
-            ...tags
-          }
-        }]
-      };
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (window.AETHERIUM_API_KEY) headers['X-API-Key'] = window.AETHERIUM_API_KEY;
-        await fetch('/api/v1/telemetry/ingest', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-      } catch (error) {
-        console.debug('[AETHERIUM][ux-event-dropped]', eventName, error);
-      }
+    function toggleMiniBox(index) {
+      document.body.classList.toggle(`show-box-${index}`);
     }
 
-    function buildShareUrl() {
-      const shareText = (chatInput.value.trim() || lastSubmittedMessage || '').slice(0, 140);
-      const url = new URL(window.location.href);
-      if (shareText) {
-        url.searchParams.set('manifest', shareText);
-      } else {
-        url.searchParams.delete('manifest');
-      }
-      return url.toString();
-    }
-
-    function applySharedManifestFromUrl() {
-      const manifest = new URLSearchParams(window.location.search).get('manifest');
-      if (!manifest) return;
-      const normalizedManifest = manifest.slice(0, 140);
-      chatInput.value = normalizedManifest;
-      autoResizeTextarea();
-      buildMessageField(normalizedManifest);
-      markInteraction(`เปิดลิงก์ Manifest แล้ว · "${normalizedManifest}"`);
-      trackUxEvent('share_link_opened', { has_manifest: 'true' });
-    }
+    const mouse = { x: -9999, y: -9999, active: false };
+    let width = 0;
+    let height = 0;
+    let particles = [];
+    let compatMode = false;
+    let compatLastFrameAt = 0;
 
     function resize() {
       W = display.width = window.innerWidth;
@@ -858,105 +964,82 @@
       }
     }
 
-    async function deliverMessage(message) {
-      const traceId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `trace-${Date.now()}`;
-      const sessionId = `homepage-${Date.now()}`;
-      const payload = {
-        session_id: sessionId,
-        model_response: {
-          trace_id: traceId,
-          reasoning_trace: message,
-          intent_vector: {
-            category: 'user_message',
-            emotional_valence: 0,
-            energy_level: 0.5
-          },
-          particle_control: {
-            intent_state: {
-              state: 'LISTENING',
-              shape: 'orb',
-              state_duration_ms: 0,
-              transition_reason: 'frontend_message_submit',
-              particle_density: 0.4,
-              velocity: 0.3,
-              turbulence: 0.2,
-              cohesion: 0.6,
-              flow_direction: 'forward',
-              glow_intensity: 0.4,
-              flicker: 0.1,
-              attractor: 'message_center',
-              palette: {
-                mode: 'duotone',
-                primary: '#6EE7F9',
-                secondary: '#A78BFA'
-              }
-            },
-            renderer_controls: {
-              base_shape: 'orb',
-              chromatic_mode: 'balanced',
-              particle_count: 900,
-              flow_field: 'laminar',
-              shader_uniforms: { cadence_hz: 2.5 },
-              runtime_profile: 'standard'
-            }
-          },
-          visual_manifestation: {
-            base_shape: 'orb',
-            transition_type: 'ease',
-            color_palette: {
-              primary: '#6EE7F9',
-              secondary: '#A78BFA'
-            },
-            particle_physics: {
-              turbulence: 0.2,
-              flow_direction: 'forward',
-              luminance_mass: 0.4,
-              particle_count: 900
-            },
-            chromatic_mode: 'balanced',
-            device_tier: 2
-          }
-        },
-        model_metadata: {
-          model_name: 'Tiny Reasoning',
-          temperature: 0.4,
-          max_tokens: 256
-        },
-        governor_context: {
-          human_override: {
-            allow_runtime_governor_bypass: false,
-            force_safe_mode: false
-          },
-          device_capability: {
-            supports_motion_sensors: true,
-            motion_sensor_permission: 'prompt',
-            low_power_mode: false,
-            gpu_tier: 2
-          }
-        }
-      };
-      try {
-        const headers = {
-          'Content-Type': 'application/json',
-          'X-Model-Provider': window.AETHERIUM_MODEL_PROVIDER || 'frontend-sim',
-          'X-Model-Version': window.AETHERIUM_MODEL_VERSION || 'tiny-reasoning-v1'
-        };
-        if (window.AETHERIUM_API_KEY) {
-          headers['X-API-Key'] = window.AETHERIUM_API_KEY;
-        }
+    async function processUserInput(text) {
+      addBubble('user', text);
+      fsm.state = 'LISTENING';
+      const references = await fetchReferenceSignals(text);
+      fsm.sourceHints = references;
+      refs.sources.textContent = references.length
+        ? `sources: ${references.join(' | ')}`
+        : 'sources: none (offline/no match)';
 
-        const response = await fetch('/api/v1/cognitive/emit', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { ok: true };
-      } catch (err) {
-        console.warn('[AETHERIUM][deliver-fallback]', err);
-        return { ok: false };
+      const enriched = references.length ? `${text} ${references.join(' ')}` : text;
+      const vector = inferIntentVector(enriched);
+      applyIntent(vector);
+
+      const response = `understood intent=${vector.intent_category}, form=${vector.visual_parameters.base_shape}, refs=${references.length}`;
+      addBubble('system', response);
+    }
+
+    function renderHUD() {
+      refs.stateText.textContent = fsm.state;
+      refs.energyText.textContent = `${Math.round(fsm.energy)}%`;
+      refs.entropyText.textContent = `${Math.round(fsm.entropy)}%`;
+      refs.loadText.textContent = `${Math.round(fsm.load)}%`;
+
+      refs.energyBar.style.width = `${fsm.energy}%`;
+      refs.entropyBar.style.width = `${fsm.entropy}%`;
+      refs.loadBar.style.width = `${fsm.load}%`;
+
+      refs.energyBar.style.backgroundColor = palette[fsm.state] || palette.IDLE;
+      refs.entropyBar.style.backgroundColor = '#00ffff';
+      refs.loadBar.style.backgroundColor = fsm.load > 65 ? '#ffd700' : '#ffffff';
+
+      refs.shapeChip.textContent = `shape: ${fsm.shape}`;
+      refs.intentChip.textContent = `intent: ${fsm.intentCategory}`;
+
+      refs.displayPage2State.textContent = fsm.state;
+      refs.displayPage2Energy.textContent = `${Math.round(fsm.energy)}%`;
+      refs.displayPage2Entropy.textContent = `${Math.round(fsm.entropy)}%`;
+
+      refs.status.classList.toggle('critical', fsm.state === 'CRITICAL');
+      refs.compatNote.textContent = compatMode
+        ? 'mode: compatibility (deterministic SVG snapshots every 500ms)'
+        : 'mode: realtime';
+    }
+
+    function renderCompatFrame() {
+      const stroke = palette[fsm.state] || palette.IDLE;
+      const energy = Math.round(fsm.energy);
+      const entropy = Math.round(fsm.entropy);
+      const load = Math.round(fsm.load);
+
+      const svg = `
+<svg xmlns='http://www.w3.org/2000/svg' width='640' height='180' viewBox='0 0 640 180'>
+  <rect width='640' height='180' fill='#050505'/>
+  <text x='16' y='26' fill='#ffffff' font-size='14' font-family='monospace'>AETHERIUM COMPAT FRAME</text>
+  <text x='16' y='48' fill='${stroke}' font-size='13' font-family='monospace'>STATE: ${fsm.state}</text>
+  <rect x='16' y='64' width='608' height='10' fill='#222'/>
+  <rect x='16' y='64' width='${(608 * energy) / 100}' height='10' fill='${stroke}'/>
+  <text x='16' y='90' fill='#00ffff' font-size='12' font-family='monospace'>ENERGY ${energy}%</text>
+  <text x='180' y='90' fill='#00ffff' font-size='12' font-family='monospace'>ENTROPY ${entropy}%</text>
+  <text x='360' y='90' fill='#ffd700' font-size='12' font-family='monospace'>LOAD ${load}%</text>
+  <text x='16' y='116' fill='#cccccc' font-size='12' font-family='monospace'>shape=${fsm.shape} intent=${fsm.intentCategory}</text>
+  <circle cx='580' cy='112' r='18' fill='none' stroke='${stroke}' stroke-width='2'/>
+  <circle cx='580' cy='112' r='${4 + (fsm.energyLevel * 12)}' fill='${stroke}' opacity='0.7'/>
+  <text x='16' y='144' fill='#9db5ff' font-size='11' font-family='monospace'>Designed for low-feature / unstable headless environments.</text>
+</svg>`;
+      refs.compatFrame.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    function detectCompatibilityMode() {
+      const params = new URLSearchParams(window.location.search);
+      const forceCompat = params.get('render') === 'compat';
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      compatMode = Boolean(forceCompat || reduceMotion);
+      if (compatMode) {
+        fsm.shape = 'sphere';
+        fsm.turbulence = 0.08;
       }
     }
 
@@ -1125,9 +1208,20 @@
       }
     });
 
-    display.addEventListener('pointerdown', (event) => {
-      addTouchBurst(event.clientX, event.clientY);
-      markInteraction('ปลุกแสงแล้ว');
+    displayButtons.forEach(btn => {
+      btn.addEventListener('click', () => setDisplayPage(btn.dataset.page));
+    });
+
+    document.getElementById('toggle-box-1').addEventListener('click', () => toggleMiniBox(1));
+    document.getElementById('toggle-box-2').addEventListener('click', () => toggleMiniBox(2));
+    document.getElementById('toggle-box-3').addEventListener('click', () => toggleMiniBox(3));
+
+    document.getElementById('voice-btn').addEventListener('click', () => {
+      addBubble('system', 'voice input icon pressed (demo)');
+    });
+
+    refs.chatToggle.addEventListener('click', () => {
+      document.body.classList.toggle('chat-open');
     });
 
     freezeBtn.addEventListener('click', () => {
@@ -1137,51 +1231,9 @@
       markInteraction(isFrozen ? 'หยุดเวลาอนุภาคแล้ว' : 'คืนการไหลของอนุภาคแล้ว');
     });
 
-    eraseBtn.addEventListener('click', () => {
-      targetField = [];
-      compileState = 'idle';
-      learnedImageMemory = null;
-      eraseBtn.classList.add('mode-active');
-      setTimeout(() => eraseBtn.classList.remove('mode-active'), 180);
-      markInteraction('ล้างฟิลด์เจตจำนงแล้ว');
-    });
-
-    saveBtn.addEventListener('click', () => {
-      saveBtn.classList.add('mode-active');
-      setTimeout(() => saveBtn.classList.remove('mode-active'), 180);
-      markInteraction('Save module ready · กำลังรอการเชื่อมต่อพื้นที่จัดเก็บ');
-    });
-
-    penBtn.addEventListener('click', () => {
-      penBtn.classList.toggle('mode-active');
-      markInteraction('Pen module ready · เตรียมเส้นทางวาดอนุภาค');
-    });
-
-    shareBtn.addEventListener('click', async () => {
-      const shareUrl = buildShareUrl();
-      const sharePayload = {
-        title: 'AETHERIUM Light Manifest',
-        text: 'ดู Light Manifest ที่ฉันสร้างใน Aetherium',
-        url: shareUrl
-      };
-
-      try {
-        if (navigator.share) {
-          await navigator.share(sharePayload);
-        } else if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(shareUrl);
-        } else {
-          throw new Error('share-unavailable');
-        }
-        markInteraction('แชร์ Manifest แล้ว · ส่งลิงก์ให้เพื่อนได้ทันที');
-        trackUxEvent('share_clicked', { has_manifest: String(shareUrl.includes('manifest=')) });
-      } catch (error) {
-        markInteraction('แชร์ไม่สำเร็จ · ลองอีกครั้ง');
-      }
-    });
-
-    window.addEventListener('resize', resize);
-
+    document.body.classList.remove('ui-open');
+    document.body.classList.remove('chat-open');
+    document.body.classList.remove('display-page-2');
     resize();
     autoResizeTextarea();
     applySharedManifestFromUrl();
