@@ -9,14 +9,16 @@
 
     :root {
       --void-bg: #020204;
-      --panel-bg: rgba(10, 10, 14, 0.78);
+      --panel-bg: rgba(10, 12, 20, 0.72);
       --panel-border: rgba(255, 255, 255, 0.08);
+      --border-light: rgba(255, 255, 255, 0.16);
+      --color-manifest: #ffd166;
       --text: #eef2ff;
       --muted: #8b93a7;
       --cyan: #00e5ff;
       --pink: #ff3d81;
       --gold: #ffd166;
-      --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+      --shadow: 0 18px 58px rgba(0, 0, 0, 0.52);
     }
 
     * { box-sizing: border-box; }
@@ -44,7 +46,11 @@
       height: 100%;
       display: block;
       z-index: 1;
-      background: radial-gradient(circle at 50% 42%, rgba(32, 41, 82, 0.18), transparent 40%), #020204;
+      background:
+        radial-gradient(circle at 50% 32%, rgba(109, 40, 217, 0.16), transparent 36%),
+        radial-gradient(circle at 72% 44%, rgba(0, 229, 255, 0.12), transparent 30%),
+        radial-gradient(circle at 28% 68%, rgba(255, 61, 129, 0.1), transparent 32%),
+        #020204;
     }
 
     /*
@@ -77,7 +83,7 @@
       bottom: 0;
       z-index: 5;
       padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(to top, rgba(2,2,4,0.88), rgba(2,2,4,0.22) 60%, transparent);
+      background: linear-gradient(to top, rgba(2,2,4,0.9), rgba(2,2,4,0.22) 60%, transparent);
       pointer-events: none;
     }
 
@@ -88,8 +94,8 @@
       border: 1px solid var(--panel-border);
       border-radius: 24px;
       box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(26px) saturate(125%);
+      -webkit-backdrop-filter: blur(26px) saturate(125%);
       padding: 10px;
       pointer-events: auto;
     }
@@ -139,8 +145,8 @@
     .composer-wrap {
       flex: 1 1 auto;
       min-width: 0;
-      background: rgba(255,255,255,0.035);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: 18px;
       padding: 10px 12px;
     }
@@ -255,63 +261,420 @@
         font-size: 13px;
       }
     }
+
+    .floating-button {
+      position: fixed;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+      border: 1px solid var(--border-light);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: white;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #settings-panel {
+      position: fixed;
+      right: 68px;
+      top: 16px;
+      z-index: 42;
+      width: min(320px, calc(100vw - 24px));
+      padding: 12px;
+      display: none;
+      font-size: 12px;
+    }
+
+    body.ui-open #settings-panel {
+      display: block;
+    }
+
+    .settings-title {
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .setting-group { margin-top: 10px; }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .seg {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .seg button {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 11px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .seg button.active {
+      border-color: rgba(0,255,255,.65);
+      color: #d0ffff;
+    }
+
+    #log {
+      right: 18px;
+      top: 284px;
+      width: 380px;
+      max-height: 46vh;
+      padding: 14px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .save-header h3,
+    .pen-header h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .format-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .format-option {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .format-option.selected {
+      border-color: var(--color-manifest);
+      background: rgba(255, 215, 0, 0.08);
+    }
+
+    .save-options,
+    .pen-actions,
+    .brush-controls {
+      display: flex;
+      gap: 8px;
+      padding: 0 12px 12px;
+      align-items: center;
+    }
+
+    .filename-input,
+    .save-button,
+    .pen-actions button,
+    .brush-controls input {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      padding: 10px;
+      font-family: inherit;
+    }
+
+    .filename-input {
+      flex: 1;
+    }
+
+    .save-button,
+    .pen-actions button {
+      cursor: pointer;
+    }
+
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .color-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+
+    .color-option.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    canvas.erase-mode {
+      cursor: crosshair;
+    }
+
+    canvas.draw-mode {
+      cursor: cell;
+    }
+
+    #hud-overlay {
+      position: fixed;
+      left: 16px;
+      top: 56px;
+      z-index: 6;
+      width: min(320px, calc(100% - 32px));
+      background: linear-gradient(165deg, rgba(17, 20, 34, 0.78), rgba(9, 11, 20, 0.56));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat-row { display: flex; flex-direction: column; gap: 8px; }
+
+    .stat-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: #dbe8ff;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #display-page-2 {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, rgba(0,255,255,.08), transparent 38%),
+                  radial-gradient(circle at 80% 80%, rgba(128,0,128,.12), transparent 42%),
+                  rgba(5,5,5,.72);
+      pointer-events: none;
+    }
+
+    body.display-page-2 #display-page-2 {
+      display: flex;
+    }
+
+    .display2-card {
+      width: min(760px, calc(100vw - 36px));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(10,10,14,.76);
+      backdrop-filter: blur(12px);
+      padding: 16px;
+    }
+
+    .display2-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .display2-cell {
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .mini-boxes {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mini-box {
+      min-width: 130px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(8,8,10,.76);
+      font-size: 11px;
+      display: none;
+    }
+
+    body.show-box-1 #mini-box-1,
+    body.show-box-2 #mini-box-2,
+    body.show-box-3 #mini-box-3 {
+      display: block;
+    }
+
+    .critical {
+      border-color: var(--critical) !important;
+      animation: flicker .14s infinite alternate;
+    }
+
+    .hud-mode {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: #c6d4ff;
+      text-transform: uppercase;
+    }
+
+    .home-tips {
+      margin: 8px auto 0;
+      width: min(980px, 100%);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .home-tip {
+      font-size: 10px;
+      color: #c8d3f0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
   </style>
 </head>
 <body>
-  <canvas id="display-layer"></canvas>
-  <canvas id="memory-layer"></canvas>
-  <input id="file-input" type="file" accept="image/*" />
+  <canvas id="nervous-system"></canvas>
+  <button id="settings-toggle" aria-label="toggle settings">⚙</button>
+  <button id="chat-toggle" aria-label="toggle chat">Chat</button>
 
-  <div class="ambient-label">AETHERIUM</div>
+  <aside class="hud" id="settings-panel">
+    <div class="settings-title">SETTINGS</div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <span>Display Page</span>
+        <div class="seg" id="display-selector">
+          <button type="button" data-page="1" class="active">Page 1</button>
+          <button type="button" data-page="2">Page 2</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <div class="setting-row"><span>Mini Box #1</span><button class="btn" id="toggle-box-1">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #2</span><button class="btn" id="toggle-box-2">Toggle</button></div>
+      <div class="setting-row"><span>Mini Box #3</span><button class="btn" id="toggle-box-3">Toggle</button></div>
+    </div>
+  </aside>
+
+  <aside class="hud" id="status">
+    <div class="row"><strong>AETHERBUS / GUNUI STATUS</strong></div>
+    <div class="row">
+      <div class="row-head"><span>FSM STATE</span><span id="state-text">IDLE</span></div>
+      <span class="chip" id="shape-chip">shape: cloud</span>
+      <span class="chip" id="intent-chip">intent: chat</span>
+      <span class="chip" id="quality-chip">quality: auto</span>
+    </div>
+  </div>
 
   <div class="bottom-shell">
     <div class="chat-bar">
       <div class="chat-top">
-        <button class="icon-btn" id="attach-btn" title="แนบไฟล์" aria-label="แนบไฟล์">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.48l10.6-10.61a4 4 0 0 1 5.66 5.66L8.7 18.12a2 2 0 1 1-2.83-2.83l9.2-9.19"/>
-          </svg>
+        <button class="icon-btn" id="attach-btn" aria-label="แนบไฟล์">
+          📎
         </button>
-
+        <button class="icon-btn" id="voice-btn" aria-label="เปิดโหมดเสียง">
+          🎙️
+        </button>
         <div class="composer-wrap">
-          <textarea id="chat-input" rows="1" placeholder="ส่งข้อความถึงแสง..."></textarea>
+          <textarea id="chat-input" placeholder="พิมพ์ข้อความที่ต้องการให้ Aetherium ประมวลผล..."></textarea>
         </div>
-
-        <button class="icon-btn" id="voice-btn" title="ข้อความเสียง" aria-label="ข้อความเสียง">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"/>
-            <path d="M19 11a7 7 0 0 1-14 0"/>
-            <path d="M12 18v4"/>
-            <path d="M8 22h8"/>
-          </svg>
+        <button class="icon-btn" id="settings-btn" aria-label="ตั้งค่า">
+          ⚙️
         </button>
-
-        <button class="send-btn" id="send-btn" title="ส่ง" aria-label="ส่ง">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2 11 13"/>
-            <path d="M22 2 15 22l-4-9-9-4 20-7Z"/>
-          </svg>
-        </button>
-
-        <button class="icon-btn" id="settings-btn" title="ตั้งค่า" aria-label="ตั้งค่า">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
-          </svg>
+        <button class="send-btn" id="send-btn" aria-label="ส่งข้อความ">
+          ➤
         </button>
       </div>
 
-      <div class="file-chip" id="file-chip">
-        <span id="file-name">ไม่มีไฟล์</span>
-        <button class="file-remove" id="file-remove" type="button">ลบ</button>
+      <div id="file-chip" class="file-chip">
+        <span id="file-name"></span>
+        <button id="file-remove" class="file-remove" type="button">ลบ</button>
       </div>
 
       <div class="chat-bottom">
-        <div class="status-line" id="status-line">SPHERE STANDBY · แตะหน้าจอเพื่อปลุกแสง</div>
-        <div class="action-row"></div>
+        <div class="status-line" id="status-line">กำลังเตรียมระบบ...</div>
       </div>
     </div>
-  </div>
+    <div class="home-tips" aria-hidden="true">
+      <div class="home-tip">Enter เพื่อส่ง</div>
+      <div class="home-tip">Shift+Enter ขึ้นบรรทัดใหม่</div>
+      <div class="home-tip">แนบภาพเพื่อสกัดโครงสร้างแสง</div>
+      <div class="home-tip">แตะพื้นที่ว่างเพื่อปลุกอนุภาค</div>
+    </div>
+    <div class="row">
+      <div class="row-head"><span>LOAD (CPU HEAT)</span><span id="load-text">0%</span></div>
+      <div class="bar-track"><div class="bar" id="load-bar"></div></div>
+    </div>
+  </aside>
+
+  <aside class="hud" id="log"><pre id="intent-json">Intent Vector จะปรากฏที่นี่...</pre></aside>
+
+  <aside class="hud" id="conversation">
+    <div><strong>CONVERSATION CONTEXT</strong></div>
+    <div id="chat-stream"></div>
+    <div id="sources">sources: none</div>
+  </aside>
+
+  <section class="hud" id="composer">
+    <input id="intent-input" placeholder="พิมพ์ intent เช่น: ด่วน! สรุปข้อมูลให้หน่อย หรือ I feel confused and tired" />
+    <button class="btn" id="voice-btn" title="Voice chat" aria-label="voice chat">🎤</button>
+    <button class="btn" id="send-btn">Emit Intent</button>
+    <button class="btn" id="nirodha-btn">Nirodha</button>
+  </section>
+
+  <aside class="hud" id="compat">
+    <div><strong>COMPATIBILITY RENDER</strong></div>
+    <div class="compat-note" id="compat-note">mode: realtime</div>
+    <img id="compat-frame" alt="compatibility-frame" />
+  </aside>
+
+  <section id="display-page-2" aria-label="display page two">
+    <div class="display2-card">
+      <div><strong>DISPLAY PAGE 2</strong></div>
+      <div style="margin-top:6px;color:#b8daff;font-size:12px;">หน้านี้เป็นโหมดแสดงผลเพิ่มเติม โดยยังคงใช้ความสามารถระบบเดิมทั้งหมด</div>
+      <div class="display2-grid">
+        <div class="display2-cell">State: <span id="page2-state">IDLE</span></div>
+        <div class="display2-cell">Energy: <span id="page2-energy">100%</span></div>
+        <div class="display2-cell">Entropy: <span id="page2-entropy">0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mini-boxes" aria-label="mini display boxes">
+    <div class="mini-box" id="mini-box-1">Mini Box 1 : System Pulse</div>
+    <div class="mini-box" id="mini-box-2">Mini Box 2 : Intent Monitor</div>
+    <div class="mini-box" id="mini-box-3">Mini Box 3 : Source Signals</div>
+  </section>
 
   <script>
     const display = document.getElementById('display-layer');
@@ -329,6 +692,14 @@
     const fileNameEl = document.getElementById('file-name');
     const fileRemoveBtn = document.getElementById('file-remove');
     const statusLine = document.getElementById('status-line');
+    const energyBar = document.getElementById('bar-energy');
+    const energyValue = document.getElementById('val-energy');
+    const energyState = document.getElementById('energy-state');
+    const freezeBtn = document.getElementById('freeze-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const eraseBtn = document.getElementById('erase-btn');
+    const penBtn = document.getElementById('pen-btn');
+    const shareBtn = document.getElementById('share-btn');
 
     let W = 0;
     let H = 0;
@@ -342,23 +713,83 @@
     let fadingOut = false;
     let visibilityStrength = 1;
     let targetField = [];
+    let compileState = 'idle';
+    let compileExpireAt = 0;
+    let isFrozen = false;
+    let lastSubmittedMessage = '';
 
-    const NUM_PHOTONS = 2600;
+    const NUM_PHOTONS = 2000;
     const PARTICLE_SPEED = 4.0;
     const IMAGE_MEMORY_TTL_MS = 60 * 60 * 1000;
+    const MESSAGE_COMPILE_HOLD_MS = 3200;
     const photons = [];
     const touchBursts = [];
 
     const THEMES = {
       idle: { palette: ['#031b44', '#0b4fd9', '#00b7ff', '#d8f6ff'], force: 0.021, noise: 0.08, trail: 0.08 },
-      sent: { palette: ['#00e5ff', '#ff3d81', '#ffd166'], force: 0.036, noise: 0.14, trail: 0.2 },
+      sent: { palette: ['#00e5ff', '#ff3d81', '#ffd166'], force: 0.036, noise: 0.14, trail: 0.16 },
       voice: { palette: ['#ff3d81', '#ffd166', '#ffffff'], force: 0.03, noise: 0.16, trail: 0.16 }
     };
     let theme = 'idle';
 
-    function setStatus(text) { statusLine.textContent = text; }
-    function setTheme(nextTheme) { theme = nextTheme; }
-    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    const fsm = {
+      state: 'IDLE',
+      energy: 100,
+      entropy: 8,
+      load: 5,
+      shape: 'cloud',
+      intentCategory: 'chat',
+      turbulence: 0.18,
+      particleDensity: 0.45,
+      emotionalValence: 0,
+      energyLevel: 0.2,
+      desiredForm: 'abstract',
+      sourceHints: [],
+      qualityTier: 'auto',
+      targetFps: 60
+    };
+
+    const refs = {
+      stateText: document.getElementById('state-text'),
+      energyText: document.getElementById('energy-text'),
+      entropyText: document.getElementById('entropy-text'),
+      loadText: document.getElementById('load-text'),
+      energyBar: document.getElementById('energy-bar'),
+      entropyBar: document.getElementById('entropy-bar'),
+      loadBar: document.getElementById('load-bar'),
+      shapeChip: document.getElementById('shape-chip'),
+      intentChip: document.getElementById('intent-chip'),
+      qualityChip: document.getElementById('quality-chip'),
+      json: document.getElementById('intent-json'),
+      status: document.getElementById('status'),
+      compatNote: document.getElementById('compat-note'),
+      compatFrame: document.getElementById('compat-frame'),
+      chatStream: document.getElementById('chat-stream'),
+      sources: document.getElementById('sources'),
+      settingsToggle: document.getElementById('settings-toggle'),
+      chatToggle: document.getElementById('chat-toggle'),
+      displayPage2State: document.getElementById('page2-state'),
+      displayPage2Energy: document.getElementById('page2-energy'),
+      displayPage2Entropy: document.getElementById('page2-entropy')
+    };
+
+    const displayButtons = Array.from(document.querySelectorAll('#display-selector button'));
+
+    function setDisplayPage(page) {
+      document.body.classList.toggle('display-page-2', page === '2');
+      displayButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+    }
+
+    function toggleMiniBox(index) {
+      document.body.classList.toggle(`show-box-${index}`);
+    }
+
+    const mouse = { x: -9999, y: -9999, active: false };
+    let width = 0;
+    let height = 0;
+    let particles = [];
+    let compatMode = false;
+    let compatLastFrameAt = 0;
 
     function resize() {
       W = display.width = window.innerWidth;
@@ -469,14 +900,222 @@
         }
       }
       targetField = points.length ? points : [];
+      compileState = targetField.length ? 'compiled' : 'idle';
+      compileExpireAt = performance.now() + MESSAGE_COMPILE_HOLD_MS;
     }
 
-    function rememberImagePattern(pattern) {
-      learnedImageMemory = {
-        ...pattern,
-        learnedAt: Date.now(),
-        expiresAt: Date.now() + IMAGE_MEMORY_TTL_MS
+      if (fsm.energy <= 1) fsm.state = 'NIRODHA';
+    }
+
+
+    const voicePipeline = {
+      vad: null,
+      listening: false,
+      capturedFrames: 0,
+      startedAt: 0,
+      samples: []
+    };
+
+    const INTENT_TEMPLATES = Object.freeze({
+      request_creation: {
+        intent_category: 'request_creation',
+        emotional_valence: 0.6,
+        energy_level: 0.78,
+        semantic_concepts: ['creation', 'manifest', 'lightform']
+      },
+      analysis: {
+        intent_category: 'analysis',
+        emotional_valence: 0.15,
+        energy_level: 0.48,
+        semantic_concepts: ['analysis', 'structure', 'inference']
+      },
+      error_recovery: {
+        intent_category: 'error_recovery',
+        emotional_valence: -0.5,
+        energy_level: 0.64,
+        semantic_concepts: ['repair', 'stability', 'fallback']
+      }
+    });
+
+    function detectGraphicsTier() {
+      const cores = navigator.hardwareConcurrency || 4;
+      const memory = navigator.deviceMemory || 4;
+      const lowPower = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (lowPower || cores <= 4 || memory <= 4) return 'low';
+      if (cores >= 12 && memory >= 8) return 'high';
+      return 'medium';
+    }
+
+    function clampParticleDensityByTier(raw, tier = fsm.qualityTier) {
+      const ceiling = tier === 'low'
+        ? 0.5
+        : tier === 'medium'
+          ? 0.75
+          : 0.95;
+      return Number(clamp(raw, 0, ceiling).toFixed(2));
+    }
+
+    function applyQualityTier(tier) {
+      fsm.qualityTier = tier;
+      if (tier === 'low') {
+        fsm.targetFps = 30;
+      } else if (tier === 'high') {
+        fsm.targetFps = 60;
+      } else {
+        fsm.targetFps = 45;
+      }
+      fsm.particleDensity = clampParticleDensityByTier(fsm.particleDensity, tier);
+    }
+
+    function setFrameRateActive(isActive) {
+      if (!isActive) {
+        fsm.targetFps = Math.min(fsm.targetFps, 24);
+      } else {
+        applyQualityTier(fsm.qualityTier);
+      }
+    }
+
+    async function transcribeAudio(audioBlob) {
+      const estimatedSeconds = Number(((audioBlob.size || 4096) / 32000).toFixed(2));
+      return `[mock-stt:${estimatedSeconds}s] สร้างสภาวะแสงที่สงบและชัดเจน`;
+    }
+
+    async function analyzeIntentWithLLM(transcript) {
+      const t = transcript.toLowerCase();
+      const template = /(error|fail|critical|พัง|ผิด)/.test(t)
+        ? INTENT_TEMPLATES.error_recovery
+        : /(analy|สรุป|ตรวจ|explain|data|ข้อมูล)/.test(t)
+          ? INTENT_TEMPLATES.analysis
+          : INTENT_TEMPLATES.request_creation;
+
+      const semantic = new Set(template.semantic_concepts);
+      if (/(water|น้ำ|river|ทะเล|stream)/.test(t)) semantic.add('flow');
+      if (/(mountain|ภูเขา)/.test(t)) semantic.add('mountain');
+      if (/(face|human|ใบหน้า|มนุษย์)/.test(t)) semantic.add('human');
+
+      return {
+        ...template,
+        semantic_concepts: Array.from(semantic)
       };
+    }
+
+    function mapIntentToVisual(intent) {
+      const concepts = intent.semantic_concepts || [];
+      let baseShape = 'sphere';
+      if (intent.intent_category === 'error_recovery') baseShape = 'cracks';
+      else if (concepts.includes('mountain')) baseShape = 'mountain';
+      else if (concepts.includes('flow')) baseShape = 'river';
+      else if (concepts.includes('human')) baseShape = 'human';
+
+      const warm = intent.emotional_valence >= 0 ? '#FFD166' : '#7FDBFF';
+
+      return {
+        intent_category: intent.intent_category,
+        emotional_valence: intent.emotional_valence,
+        energy_level: intent.energy_level,
+        semantic_concepts: concepts,
+        visual_parameters: {
+          base_shape: baseShape,
+          color_palette: warm,
+          particle_density: clampParticleDensityByTier(clamp(0.32 + intent.energy_level * 0.6, 0.2, 0.95), fsm.qualityTier),
+          turbulence: Number(clamp(0.12 + intent.energy_level * 0.7, 0.08, 0.95).toFixed(2)),
+          flow_direction: intent.emotional_valence >= 0 ? 'upward' : 'inward'
+        }
+      };
+    }
+
+    function initializeVoiceSystem(onSpeechEnd) {
+      return {
+        start() {
+          voicePipeline.listening = true;
+          voicePipeline.startedAt = performance.now();
+          voicePipeline.capturedFrames = 0;
+          addBubble('system', 'voice listening started (VAD mock)');
+        },
+        stop() {
+          if (!voicePipeline.listening) return;
+          voicePipeline.listening = false;
+          const elapsed = Math.max(600, performance.now() - voicePipeline.startedAt);
+          const byteSize = Math.round((elapsed / 1000) * 32000);
+          const payload = new Blob([new Uint8Array(byteSize)], { type: 'audio/wav' });
+          onSpeechEnd(payload);
+        }
+      };
+    }
+
+    async function processTranscript(transcript, source = 'text') {
+      const references = await fetchReferenceSignals(transcript);
+      fsm.sourceHints = references;
+      refs.sources.textContent = references.length
+        ? `sources: ${references.join(' | ')}`
+        : 'sources: none (offline/no match)';
+
+      const baseIntent = await analyzeIntentWithLLM(`${transcript} ${references.join(' ')}`.trim());
+      const vector = mapIntentToVisual(baseIntent);
+      applyIntent(vector);
+      addBubble('system', `[${source}] intent=${vector.intent_category}, form=${vector.visual_parameters.base_shape}, refs=${references.length}`);
+    }
+
+    function inferIntentVector(text) {
+      const t = text.toLowerCase();
+      let intentCategory = 'chat';
+      if (/^(run|execute|deploy|start|stop|สั่ง|ทำ)/.test(t)) intentCategory = 'command';
+      if (/(สรุป|explain|what|หา|ค้น|ข้อมูล|request|ช่วยหา)/.test(t)) intentCategory = 'request';
+      if (/(error|ผิด|พัง|fail|broken)/.test(t)) intentCategory = 'error';
+
+      let emotionalValence = 0;
+      if (/(ดีใจ|great|awesome|thanks|ขอบคุณ)/.test(t)) emotionalValence = 0.65;
+      if (/(เครียด|angry|sad|confused|tired|เหนื่อย|งง)/.test(t)) emotionalValence = -0.65;
+
+      const urgent = /(ด่วน|urgent|now|asap|ทันที|เร็ว)/.test(t);
+      const energyLevel = clamp((text.length / 120) + (urgent ? 0.36 : 0.08), 0, 1);
+
+      const concepts = [];
+      if (/(fire|heat|hot|แดง|วิกฤต)/.test(t)) concepts.push('fire');
+      if (/(flow|water|stream|ไหล)/.test(t)) concepts.push('flow');
+      if (/(structure|table|schema|json|order|ระเบียบ)/.test(t)) concepts.push('structure');
+      if (/(mountain|ภูเขา|hill)/.test(t)) concepts.push('mountain');
+      if (/(river|แม่น้ำ|waterfall)/.test(t)) concepts.push('river');
+      if (/(human|มนุษย์|body|ร่างกาย)/.test(t)) concepts.push('human');
+      if (/(face|ใบหน้า|portrait)/.test(t)) concepts.push('face');
+      if (concepts.length === 0) concepts.push('balance');
+
+      let baseShape = 'sphere';
+      if (intentCategory === 'error') baseShape = 'cracks';
+      else if (concepts.includes('mountain')) baseShape = 'mountain';
+      else if (concepts.includes('river')) baseShape = 'river';
+      else if (concepts.includes('face')) baseShape = 'face';
+      else if (concepts.includes('human')) baseShape = 'human';
+      else if (concepts.includes('flow')) baseShape = 'vortex';
+      else if (concepts.includes('structure')) baseShape = 'cube';
+      else if (energyLevel < 0.25) baseShape = 'cloud';
+
+      return {
+        intent_category: intentCategory,
+        emotional_valence: Number(emotionalValence.toFixed(2)),
+        energy_level: Number(energyLevel.toFixed(2)),
+        semantic_concepts: concepts,
+        visual_parameters: {
+          base_shape: baseShape,
+          turbulence: Number(clamp(0.1 + energyLevel * 0.8, 0, 1).toFixed(2)),
+          particle_density: clampParticleDensityByTier(clamp(0.35 + energyLevel * 0.55, 0, 1), fsm.qualityTier)
+        }
+      };
+    }
+
+    function applyIntent(intentVector) {
+      const visual = intentVector?.visual_parameters || {};
+      fsm.intentCategory = intentVector?.intent_category || 'chat';
+      fsm.shape = visual.base_shape || fsm.shape;
+      fsm.emotionalValence = Number((intentVector?.emotional_valence ?? 0).toFixed(2));
+      fsm.energyLevel = Number(clamp(intentVector?.energy_level ?? 0.2, 0, 1).toFixed(2));
+      fsm.turbulence = Number(clamp(visual.turbulence ?? fsm.turbulence, 0, 1).toFixed(2));
+      fsm.particleDensity = clampParticleDensityByTier(
+        visual.particle_density ?? fsm.particleDensity,
+        fsm.qualityTier
+      );
+      fsm.state = 'PROCESSING';
+      refs.json.textContent = JSON.stringify(intentVector, null, 2);
     }
 
     function getImagePatternMemory() {
@@ -546,105 +1185,78 @@
       }
     }
 
-    async function deliverMessage(message) {
-      const traceId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `trace-${Date.now()}`;
-      const sessionId = `homepage-${Date.now()}`;
-      const payload = {
-        session_id: sessionId,
-        model_response: {
-          trace_id: traceId,
-          reasoning_trace: message,
-          intent_vector: {
-            category: 'user_message',
-            emotional_valence: 0,
-            energy_level: 0.5
-          },
-          particle_control: {
-            intent_state: {
-              state: 'LISTENING',
-              shape: 'orb',
-              state_duration_ms: 0,
-              transition_reason: 'frontend_message_submit',
-              particle_density: 0.4,
-              velocity: 0.3,
-              turbulence: 0.2,
-              cohesion: 0.6,
-              flow_direction: 'forward',
-              glow_intensity: 0.4,
-              flicker: 0.1,
-              attractor: 'message_center',
-              palette: {
-                mode: 'duotone',
-                primary: '#6EE7F9',
-                secondary: '#A78BFA'
-              }
-            },
-            renderer_controls: {
-              base_shape: 'orb',
-              chromatic_mode: 'balanced',
-              particle_count: 900,
-              flow_field: 'laminar',
-              shader_uniforms: { cadence_hz: 2.5 },
-              runtime_profile: 'standard'
-            }
-          },
-          visual_manifestation: {
-            base_shape: 'orb',
-            transition_type: 'ease',
-            color_palette: {
-              primary: '#6EE7F9',
-              secondary: '#A78BFA'
-            },
-            particle_physics: {
-              turbulence: 0.2,
-              flow_direction: 'forward',
-              luminance_mass: 0.4,
-              particle_count: 900
-            },
-            chromatic_mode: 'balanced',
-            device_tier: 2
-          }
-        },
-        model_metadata: {
-          model_name: 'Tiny Reasoning',
-          temperature: 0.4,
-          max_tokens: 256
-        },
-        governor_context: {
-          human_override: {
-            allow_runtime_governor_bypass: false,
-            force_safe_mode: false
-          },
-          device_capability: {
-            supports_motion_sensors: true,
-            motion_sensor_permission: 'prompt',
-            low_power_mode: false,
-            gpu_tier: 2
-          }
-        }
-      };
-      try {
-        const headers = {
-          'Content-Type': 'application/json',
-          'X-Model-Provider': window.AETHERIUM_MODEL_PROVIDER || 'frontend-sim',
-          'X-Model-Version': window.AETHERIUM_MODEL_VERSION || 'tiny-reasoning-v1'
-        };
-        if (window.AETHERIUM_API_KEY) {
-          headers['X-API-Key'] = window.AETHERIUM_API_KEY;
-        }
+    async function processUserInput(text) {
+      addBubble('user', text);
+      fsm.state = 'LISTENING';
+      await processTranscript(text, 'text');
+    }
 
-        const response = await fetch('/api/v1/cognitive/emit', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { ok: true };
-      } catch (err) {
-        console.warn('[AETHERIUM][deliver-fallback]', err);
-        return { ok: false };
+    function renderHUD() {
+      const energy = Math.round(fsm.energy);
+      const entropy = Math.round(fsm.entropy);
+      const load = Math.round(fsm.load);
+
+      refs.stateText.textContent = fsm.state;
+      refs.energyText.textContent = `${energy}%`;
+      refs.entropyText.textContent = `${entropy}%`;
+      refs.loadText.textContent = `${load}%`;
+
+      refs.energyBar.style.width = `${fsm.energy}%`;
+      refs.entropyBar.style.width = `${fsm.entropy}%`;
+      refs.loadBar.style.width = `${fsm.load}%`;
+
+      refs.energyBar.style.backgroundColor = palette[fsm.state] || palette.IDLE;
+      refs.entropyBar.style.backgroundColor = '#00ffff';
+      refs.loadBar.style.backgroundColor = fsm.load > 65 ? '#ffd700' : '#ffffff';
+
+      refs.shapeChip.textContent = `shape: ${fsm.shape}`;
+      refs.intentChip.textContent = `intent: ${fsm.intentCategory}`;
+      refs.qualityChip.textContent = `quality: ${fsm.qualityTier} @${fsm.targetFps}fps`;
+
+      if (document.body.classList.contains('display-page-2') && !document.hidden) {
+        refs.displayPage2State.textContent = fsm.state;
+        refs.displayPage2Energy.textContent = `${energy}%`;
+        refs.displayPage2Entropy.textContent = `${entropy}%`;
+      }
+
+      refs.status.classList.toggle('critical', fsm.state === 'CRITICAL');
+      refs.compatNote.textContent = compatMode
+        ? 'mode: compatibility (deterministic SVG snapshots every 500ms)'
+        : 'mode: realtime';
+    }
+
+    function renderCompatFrame() {
+      const stroke = palette[fsm.state] || palette.IDLE;
+      const energy = Math.round(fsm.energy);
+      const entropy = Math.round(fsm.entropy);
+      const load = Math.round(fsm.load);
+
+      const svg = `
+<svg xmlns='http://www.w3.org/2000/svg' width='640' height='180' viewBox='0 0 640 180'>
+  <rect width='640' height='180' fill='#050505'/>
+  <text x='16' y='26' fill='#ffffff' font-size='14' font-family='monospace'>AETHERIUM COMPAT FRAME</text>
+  <text x='16' y='48' fill='${stroke}' font-size='13' font-family='monospace'>STATE: ${fsm.state}</text>
+  <rect x='16' y='64' width='608' height='10' fill='#222'/>
+  <rect x='16' y='64' width='${(608 * energy) / 100}' height='10' fill='${stroke}'/>
+  <text x='16' y='90' fill='#00ffff' font-size='12' font-family='monospace'>ENERGY ${energy}%</text>
+  <text x='180' y='90' fill='#00ffff' font-size='12' font-family='monospace'>ENTROPY ${entropy}%</text>
+  <text x='360' y='90' fill='#ffd700' font-size='12' font-family='monospace'>LOAD ${load}%</text>
+  <text x='16' y='116' fill='#cccccc' font-size='12' font-family='monospace'>shape=${fsm.shape} intent=${fsm.intentCategory}</text>
+  <circle cx='580' cy='112' r='18' fill='none' stroke='${stroke}' stroke-width='2'/>
+  <circle cx='580' cy='112' r='${4 + (fsm.energyLevel * 12)}' fill='${stroke}' opacity='0.7'/>
+  <text x='16' y='144' fill='#9db5ff' font-size='11' font-family='monospace'>Designed for low-feature / unstable headless environments.</text>
+</svg>`;
+      refs.compatFrame.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    function detectCompatibilityMode() {
+      const params = new URLSearchParams(window.location.search);
+      const forceCompat = params.get('render') === 'compat';
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      compatMode = Boolean(forceCompat || reduceMotion);
+      if (compatMode) {
+        fsm.shape = 'sphere';
+        fsm.turbulence = 0.08;
       }
     }
 
@@ -664,6 +1276,8 @@
       const imageMemory = getImagePatternMemory();
       if (imageMemory?.targetField?.length) {
         targetField = imageMemory.targetField;
+        compileState = 'compiled';
+        compileExpireAt = performance.now() + MESSAGE_COMPILE_HOLD_MS;
       } else {
         buildMessageField(text || 'FILE');
       }
@@ -671,6 +1285,8 @@
 
       if (result.ok) {
         setStatus('ส่งข้อความสำเร็จ');
+        lastSubmittedMessage = text || lastSubmittedMessage;
+        trackUxEvent('message_sent', { has_file: String(Boolean(selectedFile)) });
       } else {
         setStatus('ส่งผ่าน API ไม่สำเร็จ แสดงผลในโหมดจำลองแทน');
       }
@@ -687,17 +1303,26 @@
       sendBtn.disabled = false;
     }
 
-    function tick(ts) {
-      renderTime = ts * 0.001;
-      const cfg = THEMES[theme] || THEMES.idle;
+    let lastFrameAt = 0;
+    function tick(t) {
+      const frameInterval = 1000 / Math.max(12, fsm.targetFps || 60);
+      if (t - lastFrameAt < frameInterval) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      lastFrameAt = t;
 
-      const idleMs = performance.now() - lastInteractionTime;
-      if (idleMs > 5000) fadingOut = true;
-      visibilityStrength = clamp(visibilityStrength + (fadingOut ? -0.008 : 0.01), 0.08, 1);
-      getImagePatternMemory();
+      drawBackground();
+      evolveState();
 
-      ctx.fillStyle = `rgba(2, 2, 5, ${cfg.trail})`;
+      const trailStrength = isFrozen ? 0.04 : cfg.trail;
+      ctx.fillStyle = `rgba(2, 2, 5, ${trailStrength})`;
       ctx.fillRect(0, 0, W, H);
+      const uiEnergy = Math.max(18, Math.round(visibilityStrength * 100));
+      energyBar.style.width = `${uiEnergy}%`;
+      energyValue.textContent = `${uiEnergy}%`;
+      energyState.textContent = uiEnergy > 42 ? 'Stable' : 'Nirodha';
+      energyState.style.color = uiEnergy > 42 ? '#9fe8ff' : '#ffd166';
 
       for (let i = 0; i < photons.length; i++) {
         const p = photons[i];
@@ -707,20 +1332,28 @@
         const dy = target.y - p.y;
         const dist = Math.hypot(dx, dy) || 1;
         const force = cfg.force + (dist > 80 ? 0.005 : 0);
-        p.vx += (dx / dist) * force;
-        p.vy += (dy / dist) * force;
+        if (!isFrozen) {
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        }
 
         const burst = applyTouchBursts(p);
-        p.vx += burst.fx * 0.2;
-        p.vy += burst.fy * 0.2;
+        if (!isFrozen) {
+          p.vx += burst.fx * 0.2;
+          p.vy += burst.fy * 0.2;
+        }
 
-        p.vx += (Math.random() - 0.5) * cfg.noise;
-        p.vy += (Math.random() - 0.5) * cfg.noise;
+        if (!isFrozen) {
+          p.vx += (Math.random() - 0.5) * cfg.noise;
+          p.vy += (Math.random() - 0.5) * cfg.noise;
+        }
 
-        p.vx *= 0.91;
-        p.vy *= 0.91;
-        p.x += p.vx * PARTICLE_SPEED;
-        p.y += p.vy * PARTICLE_SPEED;
+        if (!isFrozen) {
+          p.vx *= 0.91;
+          p.vy *= 0.91;
+          p.x += p.vx * PARTICLE_SPEED;
+          p.y += p.vy * PARTICLE_SPEED;
+        }
 
         if (p.x < -20) p.x = W + 20;
         else if (p.x > W + 20) p.x = -20;
@@ -732,7 +1365,7 @@
         ctx.fillRect(p.x, p.y, 1.8, 1.8);
       }
 
-      pruneTouchBursts();
+      if (!isFrozen) pruneTouchBursts();
       requestAnimationFrame(tick);
     }
 
@@ -788,17 +1421,59 @@
       }
     });
 
-    display.addEventListener('pointerdown', (event) => {
-      addTouchBurst(event.clientX, event.clientY);
-      markInteraction('ปลุกแสงแล้ว');
+    displayButtons.forEach(btn => {
+      btn.addEventListener('click', () => setDisplayPage(btn.dataset.page));
     });
 
-    window.addEventListener('resize', resize);
+    [1, 2, 3].forEach((i) => {
+      const btn = document.getElementById(`toggle-box-${i}`);
+      if (btn) btn.addEventListener('click', () => toggleMiniBox(i));
+    });
 
+    const voiceSystem = initializeVoiceSystem(async (audioBlob) => {
+      fsm.state = 'PROCESSING';
+      const transcript = await transcribeAudio(audioBlob);
+      addBubble('user', transcript);
+      await processTranscript(transcript, 'voice');
+    });
+
+    const voiceToggleBtn = document.getElementById('voice-btn');
+    if (voiceToggleBtn) {
+      voiceToggleBtn.addEventListener('click', () => {
+        if (voicePipeline.listening) {
+          voiceSystem.stop();
+        } else {
+          voiceSystem.start();
+        }
+      });
+    }
+
+    refs.chatToggle.addEventListener('click', () => {
+      document.body.classList.toggle('chat-open');
+    });
+
+    freezeBtn.addEventListener('click', () => {
+      isFrozen = !isFrozen;
+      freezeBtn.classList.toggle('mode-active', isFrozen);
+      freezeBtn.querySelector('span').textContent = isFrozen ? 'Unfreeze' : 'Freeze';
+      markInteraction(isFrozen ? 'หยุดเวลาอนุภาคแล้ว' : 'คืนการไหลของอนุภาคแล้ว');
+    });
+
+
+    document.addEventListener('visibilitychange', () => {
+      setFrameRateActive(!document.hidden);
+    });
+
+    document.body.classList.remove('ui-open');
+    document.body.classList.remove('chat-open');
+    document.body.classList.remove('display-page-2');
     resize();
-    autoResizeTextarea();
-    initPhotons();
-    setStatus('SPHERE STANDBY · พิมพ์ข้อความแล้วกดส่งได้ทันที');
+    detectCompatibilityMode();
+    applyQualityTier(detectGraphicsTier());
+    particles = Array.from({ length: 560 }, () => new Particle());
+    renderCompatFrame();
+    renderBlueprintLock();
+    renderHUD();
     requestAnimationFrame(tick);
   </script>
 </body>

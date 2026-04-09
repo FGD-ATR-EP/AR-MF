@@ -1,81 +1,24 @@
 # AGNS Cognitive DSL API Gateway
 
-## English
+เอกสารและโค้ดตัวอย่างสำหรับระบบรับ Cognitive DSL จากโมเดลภายนอก (OpenAI / Anthropic / Google / Custom)
 
-Sample gateway for receiving Cognitive DSL payloads from external model providers.
+## Endpoints
 
-### Endpoints
 - `POST /api/v1/cognitive/emit`
 - `POST /api/v1/cognitive/validate`
 - `GET /health`
 - `WS /ws/cognitive-stream`
 
-### Required Headers
-- `X-API-Key`
-- `X-Model-Provider` (emit only)
-- `X-Model-Version` (emit only)
+## WebSocket scaling primitives (prototype)
 
-### Optional Proxy Signing Headers (`GET /api/v1/proxy/fetch`)
-- `X-Proxy-Timestamp` (unix epoch seconds)
-- `X-Proxy-Nonce` (single-use unique value)
-- `X-Proxy-Signature` (`hex(HMAC_SHA256(method + path + url + timestamp + nonce))`)
+ไฟล์ `api_gateway/ws_scaling.py` มีตัวช่วยสำหรับงานออกแบบ production websocket scaling:
+- capacity planning สำหรับเป้าหมายระดับ 1M concurrent connections
+- shard routing ตาม room hash
+- backpressure queue แบบ state-first
+- reconnect planning ด้วย version-aware replay
 
-If `AETHERIUM_PROXY_SIGNING_SECRET` is configured, proxy requests must include the signing headers.
-Set `AETHERIUM_PROXY_REQUIRE_SIGNED=true` to enforce signing even in environments where the secret might be absent.
+## Header Requirements
 
-### Run (Quick Development)
-For a quick development server, you can use `uvicorn` directly. Note that this mode may not reflect all production environment requirements.
-
-```bash
-# An API key is required for protected endpoints
-export OPENAI_API_KEY=demo-key
-
-uvicorn api_gateway.main:app --host 0.0.0.0 --port 8080 --reload
-```
-
-### Run (Production-like)
-For an environment that closer resembles production, use the provided shell script. This script ensures that necessary environment variables, like API keys, are set.
-
-```bash
-./api_gateway/start_cognitive_api.sh
-```
-
-### Validate Example
-```bash
-curl -X POST http://localhost:8080/api/v1/cognitive/validate \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: demo-key" \
-  -d @api_gateway/sample_emit_payload.json
-```
-
-### AetherBusExtreme Utilities
-Low-latency helper module: `api_gateway/aetherbus_extreme.py`
-- Zero-copy send
-- Immutable envelope models
-- Async queue bus with backpressure
-- MsgPack serialization helpers
-- NATS async publisher manager
-- Deterministic state convergence processor
-- Tachyon bridge envelope builder (`tachyon_bridge.py`) for first-class `tachyon_envelope` response payload in `/api/v1/cognitive/emit`
-
-Test command:
-```bash
-python -m unittest api_gateway/test_aetherbus_extreme.py
-```
-
----
-
-## ภาษาไทย
-
-Gateway ตัวอย่างสำหรับรับ Cognitive DSL จากผู้ให้บริการโมเดลภายนอก
-
-### Endpoint
-- `POST /api/v1/cognitive/emit`
-- `POST /api/v1/cognitive/validate`
-- `GET /health`
-- `WS /ws/cognitive-stream`
-
-### Header ที่ต้องมี
 - `X-API-Key`
 - `X-Model-Provider` (เฉพาะ emit)
 - `X-Model-Version` (เฉพาะ emit)
@@ -116,7 +59,6 @@ curl -X POST http://localhost:8080/api/v1/cognitive/validate \
 - MsgPack serialization (`serialize_to_msgpack`, `deserialize_from_msgpack`)
 - NATS async publisher (`NATSJetStreamManager`)
 - Deterministic state convergence (`StateConvergenceProcessor`)
-- Tachyon envelope bridge (`tachyon_bridge.py`) เป็นส่วนหนึ่งของระบบนิเวศ AETHERIUM โดยตรง และจะถูกส่งกลับใน `POST /api/v1/cognitive/emit`
 
 รันทดสอบเฉพาะโมดูล:
 
