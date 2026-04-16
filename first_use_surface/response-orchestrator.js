@@ -16,7 +16,7 @@ export function routeLightResponse(inputText, language) {
   const normalized = inputText.trim().toLowerCase();
   const hintedLanguage = detectLanguageHint(normalized);
 
-  const isGreeting = /^(hello|hi|hey|สวัสดี|หวัดดี|ดีจ้า|โย่ว)$/i.test(normalized);
+  const isGreeting = /^((hello|hi|hey)\b|สวัสดี|หวัดดี|ดีจ้า|โย่ว)/i.test(normalized);
   const isGratitude = /(thank|ขอบคุณ|thx|ขอบใจ)/i.test(normalized);
   const isQuestion = normalized.includes('?')
     || /^(what|how|why|when|where|who|can|could|should|do|does|is|are|อะไร|ทำไม|อย่างไร|เมื่อไร|ที่ไหน|ใคร)/i.test(normalized);
