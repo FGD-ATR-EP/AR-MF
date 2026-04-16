@@ -1,145 +1,110 @@
 # Aetherium Manifest
 
-Aetherium Manifest is a contract-first runtime for visualizing AI cognitive state as deterministic light/particle behavior, with a FastAPI gateway and WebSocket state sync.
+## English Documentation
 
-## Product definition (April 11, 2026)
+### Overview
+Aetherium Manifest is the frontend expression layer of the Aetherium ecosystem. It visualizes AI intent, confidence, and runtime state through light, motion, and abstract form.
 
-**Aetherium = Light-native Creative OS**
+### Architecture
+- **AETHERIUM-GENESIS (Backend):** reasoning core, intent generation, telemetry interpretation.
+- **Aetherium Manifest (Frontend):** visual embodiment and interaction runtime.
+- **Transport:** API/WebSocket contract over AetherBus.
 
-Aetherium Manifest is now positioned as a creative operating surface where users do not ask for "effects"; they "converse with light" to produce tangible design outputs:
+### Current Runtime Capabilities
+- Real-time particle/shape rendering mapped from intent vectors.
+- Voice interaction pipeline (VAD mock + STT mock + intent mapping).
+- Adaptive quality tier and frame-rate management.
+- Accessibility-focused controls with visual microphone feedback.
+- Window manager for all HUD panels:
+  - close (✕) per panel
+  - reopen from Settings > Panels
+  - drag-to-move and resize
+- Settings with 5 tabs: `Display`, `Panels`, `Links`, `Language`, `Voice`.
+- External URL analysis entry point in Settings (`Analyze URL`).
+- Event-driven command bus + telemetry counters + delta-state patch helper.
+- Upgraded to an installable web application (PWA) with manifest, service worker, and core assets.
 
-- poster
-- brand visual
-- UI concept
-- diagram
-- ambient scene
-- concept art
-- motion identity
-- document visual
+### API Gateway (Prototype)
+The `api_gateway/` folder includes a sample Cognitive DSL gateway:
+- `POST /api/v1/cognitive/emit`
+- `POST /api/v1/cognitive/validate`
+- `GET /health`
+- `WS /ws/cognitive-stream`
 
-Core embodiment remains a **full-screen light body + bottom composer**, now expanded with governed manifestation states, replayable lineage controls, and multimodal input affordances.
+### AetherBusExtreme Utilities
+`api_gateway/aetherbus_extreme.py` includes:
+- Zero-copy socket send (`memoryview`) + async-safe send helper (`loop.sock_sendall`)
+- Immutable envelope models
+- Async queue bus with backpressure
+- MsgPack helpers
+- NATS async manager
+- State convergence processor
 
-## What’s updated (April 2026)
-
-- `index.html` is now a fully runnable **runtime console** that runs end-to-end with:
-  - `POST /api/v1/cognitive/emit`
-  - `POST /api/v1/cognitive/validate`
-  - `POST /api/v1/cognitive/generate`
-  - `POST /api/v1/telemetry/ingest`
-  - `GET /api/v1/telemetry/query`
-  - `GET /api/v1/reliability/temporal-morphogenesis`
-  - `WS /ws/state-sync/{room_id}` (via `ws_gateway`)
-  - `WS /ws/cognitive-stream` (via `ws_gateway`)
-- The Runtime HUD now exposes state/resonance/entropy with terminal-grade governor checkpoints.
-- Composer now supports **Attach + Voice + EMIT** inside a glassmorphism shell for light-native interaction.
-- The governed manifestation loop is visible in the UI (`Contract Proposed -> Governor Verification -> Manifest`).
-- Replayable **Design Lineage Tree** enables time-shift, branch pruning, and iterative exploration.
-- The Scholar side panel (`AKASHIC SEARCH`) presents mock search summaries and source-trust status.
-
-## Architecture (current)
-
-```text
-User Input (Text / File / Voice Mock)
-        │
-        ▼
-index.html runtime console
-(intent inference + local deterministic render fallback)
-        │
-        ├── REST → api_gateway/main.py
-        │       /api/v1/cognitive/*
-        │       /api/v1/telemetry/ingest
-        │       /api/v1/reliability/temporal-morphogenesis
-        │
-        └── WebSocket → ws_gateway/main.py
-                /ws/state-sync/{room_id}
-                /ws/cognitive-stream
-```
-
-## Quick start
-
-### 1) Frontend only (local visualization)
-
+### Run Locally
 ```bash
 python3 -m http.server 4173
 # open http://localhost:4173
 ```
 
-### 2) API gateway
+### CI/CD Note
+- GitHub/Azure automation that was not in active use has been removed from this repository.
+- Deployment and quality checks should be run manually or from an external CI system outside this repo.
+- If branch protection requires status checks, update required checks in GitHub repository settings to match your active process.
+- See [remove-unused-platform-automation.md](docs/repo-maintenance/remove-unused-platform-automation.md) for more details.
 
-```bash
-cd api_gateway
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload
-```
+### Recommended Next Steps
+- Move mutable runtime state to Redis (metrics counters, telemetry cache, and websocket room membership) for multi-worker consistency.
+- Add signed outbound proxy policy (HMAC request intent + per-tenant allowlist) to harden enterprise SSRF controls.
+- Build a contract-fuzz pipeline: property-based payload generators + mutation corpus for schema regression stress tests.
+- Add persisted TSDB backend (InfluxDB/TimescaleDB) with retention and downsampling policies.
+- Add proxy allowlist/denylist + content-type and size guardrails for stronger SSRF safety.
+- Add locale QA checks (missing-key scanner + pseudolocale) in CI.
+- Add voice A/B routing and collect WER/latency metrics by language-region cohort.
+- Add CRDT merge (Yjs/Automerge) for conflict-free collaborative editing beyond simple delta updates.
 
-### 3) WS gateway
+---
 
-```bash
-cd ws_gateway
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8090 --reload
-```
+## เอกสารภาษาไทย
 
-> Default local ports are `8080` (API) and `8090` (WS) to avoid bind conflicts. Set **API Base** and **WS Base** in the UI panel accordingly.
+### ภาพรวม
+Aetherium Manifest คือเลเยอร์แสดงผลฝั่ง Frontend ของระบบ Aetherium โดยแปลงเจตนาและสถานะของ AI ให้เป็นภาพเคลื่อนไหวเชิงนามธรรม
 
-### 4) One-command local stack startup (hardened)
+### โครงสร้างระบบ
+- **AETHERIUM-GENESIS (Backend):** คิด วิเคราะห์ และสร้าง intent
+- **Aetherium Manifest (Frontend):** แสดงผลและโต้ตอบผู้ใช้
+- **การเชื่อมต่อ:** ผ่าน API/WebSocket บน AetherBus
 
-```bash
-# optional, recommended:
-python3 -m venv .venv && source .venv/bin/activate
+### ความสามารถปัจจุบัน
+- ระบบแสดงผลแบบเรียลไทม์ด้วยอนุภาคและรูปทรงตาม intent
+- Voice pipeline (VAD/STT แบบ mock) + intent mapping
+- ปรับคุณภาพกราฟิกตามเครื่องและจัดการเฟรมเรต
+- ปุ่มควบคุมที่เป็นมิตรต่อการเข้าถึง (Accessibility)
+- HUD ทุกหน้าต่างมีปุ่มปิด เปิดคืนได้จาก Settings และลาก/ย่อ-ขยายได้
+- Settings แบ่ง 5 แท็บ: `Display`, `Panels`, `Links`, `Language`, `Voice`
+- มีช่องวิเคราะห์ลิงก์ URL ภายนอก
+- มีโครง telemetry + event bus + delta-state สำหรับต่อยอด
+- ยกระดับเป็น installable web application (PWA) พร้อม manifest, service worker และ asset แกนหลัก
 
-# starts API + WS (background) and frontend static host (foreground)
-./start_services.sh
-```
+### API Gateway (ต้นแบบ)
+โฟลเดอร์ `api_gateway/` มีตัวอย่าง Cognitive DSL gateway พร้อม endpoint สำหรับ emit/validate/health/websocket
 
-Runtime knobs (environment variables):
+### แนวทางต่อยอด
+- ย้าย mutable runtime state ไปที่ Redis (metrics counters, telemetry cache และสมาชิกห้อง websocket) เพื่อรองรับหลาย worker ได้สม่ำเสมอ
+- เพิ่มนโยบาย signed outbound proxy (HMAC request intent + allowlist ตาม tenant) เพื่อเสริมความปลอดภัย SSRF ระดับองค์กร
+- สร้าง contract-fuzz pipeline ด้วยตัวสร้าง payload เชิง property-based และ mutation corpus สำหรับ stress test schema regression
+- เพิ่ม persisted TSDB backend (InfluxDB/TimescaleDB) พร้อมนโยบาย retention และ downsampling
+- เพิ่ม allowlist/denylist, content-type guardrail และขนาด payload guardrail ใน proxy
+- เพิ่ม locale QA checks ใน CI (missing-key scanner + pseudolocale)
+- เพิ่ม voice A/B routing และเก็บ WER/latency แยกตามภาษาและภูมิภาค
+- เพิ่มกลไก CRDT merge (Yjs/Automerge) สำหรับงาน collaborative editing ที่ซับซ้อนกว่า delta พื้นฐาน
 
-- `API_HOST`, `API_PORT`, `API_WORKERS`
-- `WS_HOST`, `WS_PORT`, `START_WS_GATEWAY=0|1`
-- `FRONTEND_HOST`, `FRONTEND_PORT`
-- `LOG_DIR` (default: `./.logs`)
-- `REQUIRE_REDIS_FOR_READINESS=0|1`, `REQUIRE_NATS_FOR_READINESS=0|1`
 
-Health and readiness probes:
-
-- API gateway: `GET /health`, `GET /readyz`
-- WS gateway: `GET /health`, `GET /readyz`
-
-## Recommended verification
-
-```bash
-cd api_gateway && pytest -q
-python3 tools/contracts/contract_checker.py
-python3 tools/contracts/contract_fuzz.py
-python3 tools/benchmarks/runtime_semantic_benchmark.py --input tools/benchmarks/runtime_semantic_samples.sample.json
-npx --yes tsx --test test_runtime_governor_psycho_safety.test.ts
-npm run lint
-```
-
-## Audit backlog hygiene (EN/TH)
-
-- Active audit backlogs are maintained in:
-  - `docs/CODEBASE_AUDIT_TASKS_EN.md`
-  - `docs/CODEBASE_AUDIT_TASKS_TH.md`
-- Both files must keep **pending items only**. Completed recommendations must be removed (in both English and Thai) to avoid mixing finished work with active tasks.
-- Current status: both backlog files report **no pending tasks** as of April 16, 2026.
-
-## Notes on runtime security defaults
-
-- Protected API endpoints are fail-closed when `AETHERIUM_API_KEY` is not configured.
-- Telemetry storage is intentionally in-memory (`TELEMETRY_TS_DB`) for deterministic local testing.
-
-## Security and governance
-
-- Treat model output as untrusted control signal.
-- Governor path remains canonical mutation boundary.
-- Contract/schema changes are ABI changes and must stay versioned.
-- See [SECURITY.md](SECURITY.md) for disclosure policy.
-
-## License
-
-Licensed under the MIT License. See [LICENSE](LICENSE).
+## Extension Ideas
+- Move mutable runtime state to Redis (metrics counters, telemetry cache, and websocket room membership) for multi-worker consistency.
+- Add signed outbound proxy policy (HMAC request intent + per-tenant allowlist) to harden enterprise SSRF controls.
+- Build a contract-fuzz pipeline: property-based payload generators + mutation corpus for schema regression stress tests.
+- Add persisted TSDB backend (InfluxDB/TimescaleDB) with retention and downsampling policies.
+- Add proxy allowlist/denylist + content-type and size guardrails for stronger SSRF safety.
+- Add locale QA checks (missing-key scanner + pseudolocale) in CI.
+- Add voice A/B routing and collect WER/latency metrics by language-region cohort.
+- Add CRDT merge (Yjs/Automerge) for conflict-free collaborative editing beyond simple delta updates.
