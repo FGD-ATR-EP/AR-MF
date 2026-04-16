@@ -63,7 +63,7 @@ body {
 }
 
 .icon-btn { width: 42px; height: 42px; }
-.send-btn { padding: 0 16px; height: 42px; }
+.send-btn { padding: 0 18px; height: 44px; }
 
 .ambient-status,
 .readable-fallback {
@@ -89,11 +89,11 @@ body {
   margin: 0 auto;
   width: min(860px, calc(100vw - 28px));
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   gap: 10px;
   padding: 10px;
   border-radius: 18px;
-  background: rgba(12, 16, 24, 0.64);
+  background: rgba(12, 16, 24, 0.56);
   border: 1px solid var(--line);
   backdrop-filter: blur(10px);
 }
@@ -103,8 +103,8 @@ body {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.07);
   color: var(--ink);
-  padding: 0 12px;
-  height: 42px;
+  padding: 0 14px;
+  height: 44px;
 }
 
 #intent-input::placeholder { color: rgba(238, 249, 255, 0.52); }
@@ -150,7 +150,8 @@ body {
 
 .settings input,
 .settings select,
-.settings button {
+.settings button,
+.settings-inline-btn {
   width: 100%;
   margin-top: 6px;
   border-radius: 10px;

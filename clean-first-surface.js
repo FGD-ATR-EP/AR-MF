@@ -12,7 +12,7 @@ const elements = {
   settingsPanel: document.getElementById('settings-panel'),
   settingsToggle: document.getElementById('settings-toggle'),
   closeSettings: document.getElementById('close-settings'),
-  voiceButton: document.getElementById('voice-btn'),
+  voiceCaptureButton: document.getElementById('voice-capture'),
 };
 
 const settings = {
@@ -35,6 +35,16 @@ const settings = {
 const sessionAudit = [];
 const languageLayer = createLanguageLayer(settings);
 const manifestationEngine = createLightManifestation(elements.canvas, settings.reducedMotion);
+
+let voiceRuntime = {
+  isSupported: false,
+  recognition: null,
+  isListening: false,
+};
+
+function localized(thText, enText) {
+  return settings.sessionLanguageMemory === 'th' ? thText : enText;
+}
 
 function setStatus(statusText) {
   elements.statusText.textContent = statusText;
@@ -83,7 +93,10 @@ function bindSettings() {
       settings.reducedMotion = event.target.checked;
       manifestationEngine.setReducedMotion(settings.reducedMotion);
     }],
-    ['voice-enabled-toggle', 'change', (event) => { settings.voiceEnabled = event.target.checked; }],
+    ['voice-enabled-toggle', 'change', (event) => {
+      settings.voiceEnabled = event.target.checked;
+      elements.voiceCaptureButton.disabled = !voiceRuntime.isSupported || !settings.voiceEnabled;
+    }],
     ['api-base', 'input', (event) => { settings.apiBase = event.target.value.trim(); }],
     ['ws-base', 'input', (event) => { settings.wsBase = event.target.value.trim(); }],
     ['runtime-mode', 'change', (event) => { settings.runtimeMode = event.target.value; }],
@@ -98,42 +111,45 @@ function bindSettings() {
     const el = byId(id);
     if (el) el.addEventListener(type, handler);
   });
-  byId('export-session').addEventListener('click', exportSessionAudit);
 
+  byId('export-session').addEventListener('click', exportSessionAudit);
   byId('reduced-motion-toggle').checked = settings.reducedMotion;
 }
 
 function initVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    elements.voiceButton.disabled = true;
-    elements.voiceButton.title = 'Speech API unavailable';
+  voiceRuntime.isSupported = Boolean(SpeechRecognition);
+
+  if (!voiceRuntime.isSupported) {
+    elements.voiceCaptureButton.disabled = true;
+    elements.voiceCaptureButton.textContent = 'Voice unavailable';
+    elements.voiceCaptureButton.title = 'Speech API unavailable';
     return;
   }
 
   const recognition = new SpeechRecognition();
   recognition.continuous = false;
   recognition.interimResults = false;
+  voiceRuntime.recognition = recognition;
+  elements.voiceCaptureButton.disabled = !settings.voiceEnabled;
 
-  let listening = false;
+  elements.voiceCaptureButton.addEventListener('click', () => {
+    if (!settings.voiceEnabled || !voiceRuntime.recognition) return;
 
-  elements.voiceButton.addEventListener('click', () => {
-    if (!settings.voiceEnabled) return;
-
-    if (listening) {
-      recognition.stop();
+    if (voiceRuntime.isListening) {
+      voiceRuntime.recognition.stop();
       return;
     }
 
     const language = languageLayer.resolveLanguage(elements.input.value || '');
-    recognition.lang = language === 'th' ? 'th-TH' : 'en-US';
-    recognition.start();
+    voiceRuntime.recognition.lang = language === 'th' ? 'th-TH' : 'en-US';
+    voiceRuntime.recognition.start();
   });
 
   recognition.onstart = () => {
-    listening = true;
-    elements.voiceButton.setAttribute('aria-pressed', 'true');
-    setStatus(settings.sessionLanguageMemory === 'th' ? 'กำลังฟังเสียง' : 'Listening');
+    voiceRuntime.isListening = true;
+    elements.voiceCaptureButton.textContent = localized('หยุดการฟัง', 'Stop listening');
+    setStatus(localized('กำลังฟังเสียง', 'Listening'));
   };
 
   recognition.onresult = (event) => {
@@ -144,12 +160,12 @@ function initVoice() {
   };
 
   recognition.onerror = () => {
-    setStatus(settings.sessionLanguageMemory === 'th' ? 'เสียงไม่พร้อม ใช้การพิมพ์แทน' : 'Voice unavailable, type instead');
+    setStatus(localized('เสียงไม่พร้อม ใช้การพิมพ์แทน', 'Voice unavailable. Please type instead.'));
   };
 
   recognition.onend = () => {
-    listening = false;
-    elements.voiceButton.setAttribute('aria-pressed', 'false');
+    voiceRuntime.isListening = false;
+    elements.voiceCaptureButton.textContent = localized('เริ่มรับเสียง', 'Start voice capture');
   };
 }
 
@@ -159,7 +175,7 @@ function onComposerSubmit(event) {
   if (!text) return;
 
   applySubmissionState(true);
-  setStatus(settings.sessionLanguageMemory === 'th' ? 'กำลังตีความ' : 'Interpreting');
+  setStatus(localized('กำลังตีความ', 'Interpreting'));
 
   const language = languageLayer.resolveLanguage(text);
   const response = routeLightResponse(text, language);
@@ -190,6 +206,12 @@ function bindSettingsPanel() {
     elements.settingsPanel.hidden = true;
     elements.settingsToggle.setAttribute('aria-expanded', 'false');
     elements.settingsToggle.focus();
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !elements.settingsPanel.hidden) {
+      elements.closeSettings.click();
+    }
   });
 }
 

@@ -11,14 +11,14 @@ The homepage intentionally renders only:
 - One Settings button.
 - Subtle human-readable status text and a lightweight readable fallback line.
 
-No dashboard/HUD/debug panels are shown on first view.
+No dashboard, HUD, debug panel, scholar panel, lineage panel, or runtime console is shown on first view.
 
 ## Module split
 
 - `clean-first-surface.js`
   - App bootstrap and orchestration.
-  - Settings wiring and session audit export.
-  - Voice progressive-enhancement integration.
+  - Settings wiring and session-audit export.
+  - Voice progressive-enhancement integration from Settings.
 - `first_use_surface/light-manifestation.js`
   - Luminous text renderer with glyph-sampling particle halo.
   - Calm ambient particle field.
@@ -28,7 +28,7 @@ No dashboard/HUD/debug panels are shown on first view.
   - Browser-locale + character-range baseline detection.
   - Optional local rule-based detector layer.
 - `first_use_surface/response-orchestrator.js`
-  - Deterministic first-run response rules for greeting/gratitude/question/unknown intent.
+  - Deterministic first-run response rules for greeting, gratitude, question, unknown intent, and language mismatch.
 
 ## Language detection strategy
 
@@ -48,16 +48,16 @@ All advanced controls are kept inside Settings:
 - Runtime mode and telemetry options.
 - Lineage/replay/scholar/governor/developer toggles.
 - Reduced-motion and language/voice/local-detector options.
-- Session audit export.
+- Optional voice capture trigger and session-audit export.
 
 ## Fallback behavior
 
-- If SpeechRecognition is not available, voice control disables itself without breaking the composer flow.
-- If language detection confidence is low, the runtime uses deterministic fallback + session memory.
-- If animations are reduced, luminous text remains readable without relying on motion cues.
+- If `SpeechRecognition` is unavailable, voice controls stay in Settings and disable gracefully.
+- If language confidence is low, the runtime uses deterministic fallback + session memory.
+- If motion is reduced, luminous text remains readable without relying on animation.
 
 ## Limitations
 
-- Current language detector is heuristic and local-rule based (no heavy ML model).
-- Voice input depends on browser SpeechRecognition availability.
-- Session audit export remains local-download + in-memory trail.
+- The current language detector is heuristic + local-rule based (no heavy ML model).
+- Voice input depends on browser `SpeechRecognition` support.
+- Session-audit export remains local-download + in-memory trail.
