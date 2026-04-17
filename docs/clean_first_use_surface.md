@@ -31,7 +31,7 @@ No dashboard, HUD, debug panel, scholar panel, lineage panel, or runtime console
   - Optional local rule-based detector layer (pluggable).
 - `first_use_surface/response-orchestrator.js`
   - Deterministic first-run response rules for greeting/gratitude/question/unknown intent.
-  - Language-mismatch adaptation response.
+  - Language mismatch adaptation message for preference/input divergence.
 
 ## Language detection strategy
 
@@ -43,7 +43,7 @@ Resolution order:
 4. Deterministic language choice with confidence-based rules.
 5. Session language memory update.
 
-## Settings as single advanced-control surface
+## Settings as a single advanced-control surface
 
 All advanced controls are kept inside Settings:
 
@@ -62,5 +62,5 @@ All advanced controls are kept inside Settings:
 ## Limitations
 
 - Current language detector is heuristic and local-rule based (no heavy ML model).
-- Voice input depends on browser `SpeechRecognition` availability.
-- Session audit export remains local-download + in-memory trail.
+- Voice input depends on browser SpeechRecognition availability.
+- Session audit export remains local-download plus in-memory trail.

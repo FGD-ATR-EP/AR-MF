@@ -49,12 +49,13 @@ const sessionAudit = [];
 const languageLayer = createLanguageLayer(settings);
 const manifestationEngine = createLightManifestation(elements.canvas, settings.reducedMotion);
 
-function persistSettings() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+function activeLanguage() {
+  return settings.sessionLanguageMemory === 'en' ? 'en' : 'th';
 }
 
-function t(th, en) {
-  return settings.sessionLanguageMemory === 'th' ? th : en;
+function localizedUI(key) {
+  const language = activeLanguage();
+  return uiText[language][key];
 }
 
 function setStatus(statusText) {
@@ -181,7 +182,7 @@ function initVoice() {
   recognition.onstart = () => {
     listening = true;
     elements.voiceButton.setAttribute('aria-pressed', 'true');
-    setStatus(t('กำลังฟังเสียง', 'Listening'));
+    setStatus(localizedUI('listening'));
   };
 
   recognition.onresult = (event) => {
@@ -192,12 +193,13 @@ function initVoice() {
   };
 
   recognition.onerror = () => {
-    setStatus(t('เสียงไม่พร้อม ใช้การพิมพ์แทน', 'Voice unavailable, type instead'));
+    setStatus(localizedUI('voiceUnavailable'));
   };
 
   recognition.onend = () => {
-    voiceRuntime.isListening = false;
-    elements.voiceCaptureButton.textContent = localized('เริ่มรับเสียง', 'Start voice capture');
+    listening = false;
+    elements.voiceButton.setAttribute('aria-pressed', 'false');
+    setStatus(localizedUI('ready'));
   };
 }
 
@@ -210,6 +212,8 @@ function onComposerSubmit(event) {
   setStatus(t('กำลังตีความ', 'Interpreting'));
 
   const language = languageLayer.resolveLanguage(text);
+  setStatus(localizedUI('interpreting'));
+
   const response = routeLightResponse(text, language);
 
   manifestationEngine.manifestText(response.text, response.mood);
@@ -268,6 +272,14 @@ function bindSettingsPanel() {
       elements.closeSettings.click();
     }
   });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !elements.settingsPanel.hidden) {
+      elements.settingsPanel.hidden = true;
+      elements.settingsToggle.setAttribute('aria-expanded', 'false');
+      elements.settingsToggle.focus();
+    }
+  });
 }
 
 function bootstrap() {
@@ -279,9 +291,11 @@ function bootstrap() {
   window.addEventListener('resize', manifestationEngine.resize);
 
   manifestationEngine.resize();
-  setStatus(t('พร้อมฟัง', 'Ready to receive'));
-  manifestationEngine.manifestText('สวัสดี — Hello', 'greeting');
-  setReadableFallback('สวัสดี — Hello');
+  const bootLanguage = languageLayer.resolveLanguage('');
+  settings.sessionLanguageMemory = bootLanguage;
+  setStatus(localizedUI('ready'));
+  manifestationEngine.manifestText(bootLanguage === 'th' ? 'สวัสดี' : 'Hello', 'greeting');
+  setReadableFallback(bootLanguage === 'th' ? 'สวัสดี' : 'Hello');
   requestAnimationFrame(manifestationEngine.render);
 }
 

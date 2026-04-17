@@ -2,13 +2,12 @@ function localized(language, thText, enText) {
   return language === 'th' ? thText : enText;
 }
 
-function detectInputLanguage(text) {
-  const thai = /[\u0E00-\u0E7F]/.test(text);
-  const english = /[A-Za-z]/.test(text);
-
-  if (thai && !english) return 'th';
-  if (english && !thai) return 'en';
-  return 'mixed';
+function detectInputLanguage(inputText) {
+  const thaiChars = (inputText.match(/[\u0E00-\u0E7F]/g) || []).length;
+  const englishChars = (inputText.match(/[A-Za-z]/g) || []).length;
+  if (thaiChars > englishChars) return 'th';
+  if (englishChars > thaiChars) return 'en';
+  return 'unknown';
 }
 
 export function routeLightResponse(inputText, language) {
