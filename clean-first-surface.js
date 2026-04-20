@@ -27,6 +27,7 @@ const elements = {
   settingsToggle: document.getElementById('settings-toggle'),
   closeSettings: document.getElementById('close-settings'),
   voiceCaptureButton: document.getElementById('voice-capture'),
+  connectionStatus: document.getElementById('connection-status'),
 };
 
 const defaultSettings = {
@@ -72,6 +73,26 @@ const voiceRuntime = {
   recognition: null,
 };
 
+const connectionRuntime = {
+  socket: null,
+  reconnectTimer: null,
+  reconnectAttempts: 0,
+  shouldReconnect: true,
+  url: '',
+};
+
+const sysState = {
+  state: '',
+  visual: {
+    energy: 0,
+    entropy: 0,
+    color_palette: {
+      primary: '#7FE4FF',
+      secondary: '#EBF9FF',
+    },
+  },
+};
+
 function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -104,6 +125,11 @@ function setStatus(statusText) {
   elements.statusText.textContent = statusText;
 }
 
+function setConnectionStatus(state) {
+  if (!elements.connectionStatus) return;
+  elements.connectionStatus.textContent = state;
+}
+
 function setReadableFallback(text) {
   elements.fallbackText.textContent = text;
 }
@@ -118,6 +144,198 @@ function pushSessionEvent(payload) {
     ...payload,
     at: new Date().toISOString(),
   });
+}
+
+function resolveWsUrl(inputUrl = '') {
+  const source = inputUrl.trim() || settings.wsBase;
+  if (!source) return '';
+
+  if (/^wss?:\/\//i.test(source)) return source;
+  if (/^https?:\/\//i.test(source)) {
+    return source.replace(/^http/i, 'ws');
+  }
+
+  const base = new URL(window.location.href);
+  const wsProtocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${base.host}${source.startsWith('/') ? source : `/${source}`}`;
+}
+
+function nextReconnectDelayMs(attempt) {
+  return Math.min(8000, 2000 * (2 ** Math.max(0, attempt - 1)));
+}
+
+function clearReconnectTimer() {
+  if (connectionRuntime.reconnectTimer === null) return;
+  window.clearTimeout(connectionRuntime.reconnectTimer);
+  connectionRuntime.reconnectTimer = null;
+}
+
+function clampToVisualRange(value) {
+  return Math.max(0, Math.min(1.5, value));
+}
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function sanitizePaletteValue(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim();
+  return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(normalized) ? normalized : fallback;
+}
+
+function validateIncomingStateSchema(payload) {
+  if (!isRecord(payload)) {
+    return { ok: false, reason: 'payload must be an object' };
+  }
+
+  const { state, visual } = payload;
+  if (typeof state !== 'string' || !state.trim()) {
+    return { ok: false, reason: 'payload.state must be a non-empty string' };
+  }
+
+  if (!isRecord(visual)) {
+    return { ok: false, reason: 'payload.visual must be an object' };
+  }
+
+  if (typeof visual.energy !== 'number' || !Number.isFinite(visual.energy)) {
+    return { ok: false, reason: 'payload.visual.energy must be a finite number' };
+  }
+
+  if (typeof visual.entropy !== 'number' || !Number.isFinite(visual.entropy)) {
+    return { ok: false, reason: 'payload.visual.entropy must be a finite number' };
+  }
+
+  if (!isRecord(visual.color_palette)) {
+    return { ok: false, reason: 'payload.visual.color_palette must be an object' };
+  }
+
+  return {
+    ok: true,
+    value: {
+      state: state.trim(),
+      visual: {
+        energy: clampToVisualRange(visual.energy),
+        entropy: clampToVisualRange(visual.entropy),
+        color_palette: {
+          primary: sanitizePaletteValue(visual.color_palette.primary, '#7FE4FF'),
+          secondary: sanitizePaletteValue(visual.color_palette.secondary, '#EBF9FF'),
+        },
+      },
+    },
+  };
+}
+
+function applyVisualParameters(visual) {
+  const palette = {
+    primary: sanitizePaletteValue(visual.color_palette?.primary, '#7FE4FF'),
+    secondary: sanitizePaletteValue(visual.color_palette?.secondary, '#EBF9FF'),
+  };
+
+  sysState.visual = {
+    energy: clampToVisualRange(visual.energy),
+    entropy: clampToVisualRange(visual.entropy),
+    color_palette: palette,
+  };
+
+  if (globalThis.THREE?.Color) {
+    // เตรียมสีที่ sanitize แล้วสำหรับ stage geometry/material ที่ใช้ THREE.
+    sysState.visual.color = {
+      primary: new globalThis.THREE.Color(palette.primary),
+      secondary: new globalThis.THREE.Color(palette.secondary),
+    };
+  }
+}
+
+function handleIncomingState(payload) {
+  const validation = validateIncomingStateSchema(payload);
+  if (validation.ok) {
+    sysState.state = validation.value.state;
+    applyVisualParameters(validation.value.visual);
+  } else {
+    console.warn('Non-fatal stream validation failure', {
+      reason: validation.reason,
+      payload,
+    });
+  }
+
+  const fallbackText = payload?.text
+    ?? payload?.message
+    ?? payload?.intent_state?.state
+    ?? (validation.ok ? validation.value.state : '')
+    ?? '';
+
+  if (fallbackText) {
+    manifestationEngine.manifestText(String(fallbackText), 'stream');
+    setReadableFallback(String(fallbackText));
+  }
+
+  pushSessionEvent({
+    session_id: sessionId,
+    transport: 'ws_state',
+    payload,
+  });
+}
+
+function scheduleReconnect() {
+  clearReconnectTimer();
+  if (!connectionRuntime.shouldReconnect || !connectionRuntime.url) {
+    setConnectionStatus('DISCONNECTED');
+    return;
+  }
+
+  connectionRuntime.reconnectAttempts += 1;
+  const delayMs = nextReconnectDelayMs(connectionRuntime.reconnectAttempts);
+  setConnectionStatus('RECONNECTING');
+  setStatus(`Reconnecting in ${Math.round(delayMs / 1000)}s`);
+
+  connectionRuntime.reconnectTimer = window.setTimeout(() => {
+    connectWS(connectionRuntime.url);
+  }, delayMs);
+}
+
+function connectWS(url) {
+  const resolvedUrl = resolveWsUrl(url);
+  connectionRuntime.url = resolvedUrl;
+
+  clearReconnectTimer();
+
+  if (connectionRuntime.socket) {
+    connectionRuntime.shouldReconnect = false;
+    connectionRuntime.socket.close();
+    connectionRuntime.socket = null;
+  }
+
+  connectionRuntime.shouldReconnect = true;
+  setConnectionStatus('RECONNECTING');
+
+  const socket = new WebSocket(resolvedUrl);
+  connectionRuntime.socket = socket;
+
+  socket.onopen = () => {
+    connectionRuntime.reconnectAttempts = 0;
+    setConnectionStatus('CONNECTED');
+    setStatus('WS connected');
+  };
+
+  socket.onmessage = (event) => {
+    const payload = JSON.parse(event.data);
+    handleIncomingState(payload);
+  };
+
+  socket.onclose = () => {
+    if (connectionRuntime.socket === socket) {
+      connectionRuntime.socket = null;
+    }
+    scheduleReconnect();
+  };
+
+  socket.onerror = () => {
+    setConnectionStatus('RECONNECTING');
+    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      socket.close();
+    }
+  };
 }
 
 function exportSessionAudit() {
@@ -266,7 +484,14 @@ function bindSettings() {
       }
     }],
     ['api-base', 'change', (event) => { settings.apiBase = event.target.value.trim(); }],
-    ['ws-base', 'change', (event) => { settings.wsBase = event.target.value.trim(); }],
+    ['ws-base', 'change', (event) => {
+      settings.wsBase = event.target.value.trim();
+      const cfgWs = byId('cfg-ws');
+      if (cfgWs && !cfgWs.value.trim()) {
+        cfgWs.value = settings.wsBase;
+      }
+    }],
+    ['cfg-ws', 'change', (event) => { settings.wsBase = event.target.value.trim(); }],
     ['runtime-mode', 'change', (event) => { settings.runtimeMode = event.target.value; }],
     ['telemetry-toggle', 'change', (event) => { settings.telemetry = event.target.checked; }],
     ['lineage-toggle', 'change', (event) => { settings.lineage = event.target.checked; }],
@@ -295,11 +520,20 @@ function bindSettings() {
   byId('api-base').value = settings.apiBase;
   byId('ws-base').value = settings.wsBase;
   byId('runtime-mode').value = settings.runtimeMode;
+  if (byId('cfg-ws')) {
+    byId('cfg-ws').value = settings.wsBase;
+  }
   byId('telemetry-toggle').checked = settings.telemetry;
   byId('lineage-toggle').checked = settings.lineage;
   byId('scholar-toggle').checked = settings.scholar;
   byId('governor-toggle').checked = settings.governorDebug;
   byId('devtools-toggle').checked = settings.developerTools;
+  if (byId('btn-connect')) {
+    byId('btn-connect').addEventListener('click', () => {
+      const manualUrl = byId('cfg-ws')?.value?.trim() ?? settings.wsBase;
+      connectWS(manualUrl);
+    });
+  }
 }
 
 function setVoiceUiState(isListening) {
@@ -416,9 +650,11 @@ function bootstrap() {
   const bootLanguage = languageLayer.resolveLanguage('');
   settings.sessionLanguageMemory = bootLanguage;
   setStatus(localizedUI('ready'));
+  setConnectionStatus('DISCONNECTED');
   manifestationEngine.manifestText(bootLanguage === 'th' ? 'สวัสดี' : 'Hello', 'greeting');
   setReadableFallback(bootLanguage === 'th' ? 'สวัสดี' : 'Hello');
   requestAnimationFrame(manifestationEngine.render);
+  connectWS(settings.wsBase);
 }
 
 bootstrap();
