@@ -1,9 +1,9 @@
 :root {
   color-scheme: dark;
-  --bg: #04050a;
+  --bg: #03040a;
   --ink: #f4fbff;
-  --line: rgba(200, 236, 255, 0.28);
-  --panel: rgba(11, 14, 20, 0.88);
+  --line: rgba(200, 236, 255, 0.24);
+  --panel: rgba(11, 14, 20, 0.92);
   --glow: #7fe4ff;
 }
 
@@ -16,7 +16,7 @@ body {
   height: 100%;
   overflow: hidden;
   font-family: Inter, Sarabun, system-ui, -apple-system, sans-serif;
-  background: radial-gradient(circle at 50% 16%, #12162a 0%, var(--bg) 48%);
+  background: radial-gradient(circle at 50% 18%, #11172a 0%, var(--bg) 50%);
   color: var(--ink);
 }
 
@@ -31,10 +31,6 @@ body {
 .first-surface {
   position: fixed;
   inset: 0;
-  display: grid;
-  grid-template-rows: 1fr auto auto;
-  align-items: end;
-  padding: 24px;
   pointer-events: none;
 }
 
@@ -48,66 +44,65 @@ body {
 }
 
 #settings-toggle {
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 20px;
+  z-index: 4;
 }
 
 .icon-btn,
 .send-btn {
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
   cursor: pointer;
 }
 
 .icon-btn { width: 42px; height: 42px; }
-.send-btn { padding: 0 16px; height: 42px; }
+.send-btn { padding: 0 18px; height: 44px; }
 
 .ambient-status,
 .readable-fallback {
-  margin: 0 auto;
-  text-align: center;
-  max-width: min(720px, 90vw);
+  margin: 0;
   text-shadow: 0 0 18px rgba(127, 228, 255, 0.35);
 }
 
 .ambient-status {
   opacity: 0.84;
-  font-size: clamp(14px, 2.2vw, 20px);
-  margin-bottom: 12px;
+  font-size: 13px;
 }
 
 .readable-fallback {
-  min-height: 1.2em;
-  margin-bottom: 18px;
+  min-height: 1.4em;
+  margin: 6px 0 12px;
   opacity: 0.92;
+  font-size: 14px;
 }
 
 .composer {
-  margin: 0 auto;
-  width: min(860px, calc(100vw - 28px));
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 10px;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(12, 16, 24, 0.64);
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(12, 16, 24, 0.5);
   border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
 }
 
 #intent-input {
   border: 1px solid transparent;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--ink);
-  padding: 0 12px;
-  height: 42px;
+  padding: 0 14px;
+  height: 44px;
+  min-width: 0;
 }
 
-#intent-input::placeholder { color: rgba(238, 249, 255, 0.52); }
+#intent-input::placeholder { color: rgba(238, 249, 255, 0.56); }
 
 :focus-visible {
   outline: 2px solid var(--glow);
@@ -118,7 +113,7 @@ body {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: min(410px, calc(100vw - 24px));
+  width: min(460px, calc(100vw - 24px));
   max-height: calc(100vh - 40px);
   overflow: auto;
   border: 1px solid var(--line);
@@ -150,7 +145,8 @@ body {
 
 .settings input,
 .settings select,
-.settings button {
+.settings button,
+.settings-inline-btn {
   width: 100%;
   margin-top: 6px;
   border-radius: 10px;

@@ -1,21 +1,35 @@
 import { createLanguageLayer } from './first_use_surface/language-layer.js';
 import { createLightManifestation } from './first_use_surface/light-manifestation.js';
-import { routeLightResponse } from './first_use_surface/response-orchestrator.js';
+import {
+  markCompositionEnd,
+  markCompositionStart,
+  markInputCommitted,
+  shouldSubmitOnEnter,
+} from './first_use_surface/input-event-policy.js';
+
+const STORAGE_KEY = 'aetherium:first-surface-settings:v1';
+const DEFAULT_INTENT_TIMEOUT_MS = 10000;
+
+function createSessionId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `session_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
 
 const elements = {
   canvas: document.getElementById('manifestation-canvas'),
   form: document.getElementById('composer'),
   input: document.getElementById('intent-input'),
   sendButton: document.getElementById('send-btn'),
+  voiceButton: document.getElementById('voice-btn'),
   statusText: document.getElementById('ambient-status'),
   fallbackText: document.getElementById('readable-fallback'),
   settingsPanel: document.getElementById('settings-panel'),
   settingsToggle: document.getElementById('settings-toggle'),
   closeSettings: document.getElementById('close-settings'),
-  voiceButton: document.getElementById('voice-btn'),
+  voiceCaptureButton: document.getElementById('voice-capture'),
 };
 
-const settings = {
+const defaultSettings = {
   languagePreference: 'auto',
   useLocalDetector: true,
   localModelProfile: 'tiny-rules',
@@ -29,12 +43,62 @@ const settings = {
   scholar: false,
   governorDebug: false,
   developerTools: false,
-  sessionLanguageMemory: 'th',
+  sessionLanguageMemory: (navigator.language || 'en').toLowerCase().startsWith('th') ? 'th' : 'en',
 };
 
+const uiText = {
+  th: {
+    ready: 'พร้อมฟัง',
+    listening: 'กำลังฟัง',
+    interpreting: 'กำลังตีความ',
+    voiceUnavailable: 'ไม่รองรับระบบเสียงในเบราว์เซอร์นี้',
+  },
+  en: {
+    ready: 'Ready',
+    listening: 'Listening',
+    interpreting: 'Interpreting',
+    voiceUnavailable: 'Voice is not available in this browser',
+  },
+};
+
+const inputRuntime = {
+  isComposing: false,
+  lastCompositionEndAt: -Infinity,
+};
+
+const voiceRuntime = {
+  isSupported: false,
+  isListening: false,
+  recognition: null,
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...defaultSettings };
+    return { ...defaultSettings, ...JSON.parse(raw) };
+  } catch {
+    return { ...defaultSettings };
+  }
+}
+
+function persistSettings() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+const settings = loadSettings();
+const sessionId = createSessionId();
 const sessionAudit = [];
 const languageLayer = createLanguageLayer(settings);
 const manifestationEngine = createLightManifestation(elements.canvas, settings.reducedMotion);
+
+function activeLanguage() {
+  return settings.sessionLanguageMemory === 'en' ? 'en' : 'th';
+}
+
+function localizedUI(key) {
+  return uiText[activeLanguage()][key];
+}
 
 function setStatus(statusText) {
   elements.statusText.textContent = statusText;
@@ -72,6 +136,115 @@ function exportSessionAudit() {
   URL.revokeObjectURL(url);
 }
 
+async function emitIntent(intent) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), DEFAULT_INTENT_TIMEOUT_MS);
+
+  try {
+    const apiBase = settings.apiBase.replace(/\/$/, '');
+    const response = await fetch(`${apiBase}/intent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        intent,
+        session_id: sessionId,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Timeout after ${DEFAULT_INTENT_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function submitIntent(intent) {
+  const text = intent.trim();
+  if (!text) return;
+
+  applySubmissionState(true);
+  setStatus('Intent sent');
+
+  try {
+    await emitIntent(text);
+    console.info('Intent sent', { session_id: sessionId });
+    setStatus('Awaiting stream update');
+    setReadableFallback('Awaiting stream update');
+    console.info('Awaiting stream update', { session_id: sessionId });
+
+    pushSessionEvent({
+      session_id: sessionId,
+      intent: text,
+      transport: 'intent_posted',
+    });
+
+    elements.input.value = '';
+    persistSettings();
+  } catch (error) {
+    const transportError = `Transport error: ${error.message}`;
+    console.error(transportError);
+    setStatus(transportError);
+    setReadableFallback(transportError);
+    pushSessionEvent({
+      session_id: sessionId,
+      intent: text,
+      transport: 'intent_failed',
+      error: error.message,
+    });
+  } finally {
+    applySubmissionState(false);
+  }
+}
+
+function bindInputEvents() {
+  elements.form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    submitIntent(elements.input.value);
+  });
+
+  elements.input.addEventListener('compositionstart', () => {
+    markCompositionStart(inputRuntime);
+  });
+
+  elements.input.addEventListener('compositionend', (event) => {
+    markCompositionEnd(inputRuntime, event.timeStamp);
+  });
+
+
+  elements.input.addEventListener('beforeinput', (event) => {
+    if (event.inputType === 'insertCompositionText' || event.inputType === 'deleteCompositionText') {
+      markCompositionStart(inputRuntime);
+    }
+  });
+
+  elements.input.addEventListener('input', (event) => {
+    if (event.isComposing) {
+      markCompositionStart(inputRuntime);
+      return;
+    }
+
+    if (event.inputType !== 'insertCompositionText' && event.inputType !== 'deleteCompositionText') {
+      markInputCommitted(inputRuntime);
+    }
+  });
+
+  elements.input.addEventListener('keydown', (event) => {
+    if (!shouldSubmitOnEnter(event, inputRuntime)) return;
+
+    event.preventDefault();
+    elements.form.requestSubmit();
+  });
+}
+
 function bindSettings() {
   const byId = (id) => document.getElementById(id);
 
@@ -83,9 +256,17 @@ function bindSettings() {
       settings.reducedMotion = event.target.checked;
       manifestationEngine.setReducedMotion(settings.reducedMotion);
     }],
-    ['voice-enabled-toggle', 'change', (event) => { settings.voiceEnabled = event.target.checked; }],
-    ['api-base', 'input', (event) => { settings.apiBase = event.target.value.trim(); }],
-    ['ws-base', 'input', (event) => { settings.wsBase = event.target.value.trim(); }],
+    ['voice-enabled-toggle', 'change', (event) => {
+      settings.voiceEnabled = event.target.checked;
+      const isDisabled = !settings.voiceEnabled || !voiceRuntime.isSupported;
+      elements.voiceButton.disabled = isDisabled;
+      elements.voiceCaptureButton.disabled = isDisabled;
+      if (isDisabled) {
+        elements.voiceButton.setAttribute('aria-pressed', 'false');
+      }
+    }],
+    ['api-base', 'change', (event) => { settings.apiBase = event.target.value.trim(); }],
+    ['ws-base', 'change', (event) => { settings.wsBase = event.target.value.trim(); }],
     ['runtime-mode', 'change', (event) => { settings.runtimeMode = event.target.value; }],
     ['telemetry-toggle', 'change', (event) => { settings.telemetry = event.target.checked; }],
     ['lineage-toggle', 'change', (event) => { settings.lineage = event.target.checked; }],
@@ -96,115 +277,147 @@ function bindSettings() {
 
   bindingMap.forEach(([id, type, handler]) => {
     const el = byId(id);
-    if (el) el.addEventListener(type, handler);
+    if (!el) return;
+
+    el.addEventListener(type, (event) => {
+      handler(event);
+      persistSettings();
+    });
   });
+
   byId('export-session').addEventListener('click', exportSessionAudit);
 
+  byId('language-preference').value = settings.languagePreference;
+  byId('local-detector-toggle').checked = settings.useLocalDetector;
+  byId('local-model-profile').value = settings.localModelProfile;
   byId('reduced-motion-toggle').checked = settings.reducedMotion;
+  byId('voice-enabled-toggle').checked = settings.voiceEnabled;
+  byId('api-base').value = settings.apiBase;
+  byId('ws-base').value = settings.wsBase;
+  byId('runtime-mode').value = settings.runtimeMode;
+  byId('telemetry-toggle').checked = settings.telemetry;
+  byId('lineage-toggle').checked = settings.lineage;
+  byId('scholar-toggle').checked = settings.scholar;
+  byId('governor-toggle').checked = settings.governorDebug;
+  byId('devtools-toggle').checked = settings.developerTools;
+}
+
+function setVoiceUiState(isListening) {
+  voiceRuntime.isListening = isListening;
+  elements.voiceButton.setAttribute('aria-pressed', isListening ? 'true' : 'false');
+  elements.voiceCaptureButton.textContent = isListening ? 'Stop voice capture' : 'Start voice capture';
+  setStatus(isListening ? localizedUI('listening') : localizedUI('ready'));
 }
 
 function initVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    elements.voiceButton.disabled = true;
-    elements.voiceButton.title = 'Speech API unavailable';
+  voiceRuntime.isSupported = Boolean(SpeechRecognition);
+
+  const disabledByPolicy = !settings.voiceEnabled;
+  elements.voiceButton.disabled = disabledByPolicy || !voiceRuntime.isSupported;
+  elements.voiceCaptureButton.disabled = disabledByPolicy || !voiceRuntime.isSupported;
+
+  if (!voiceRuntime.isSupported) {
+    elements.voiceCaptureButton.textContent = 'Voice unavailable';
+    elements.voiceCaptureButton.title = 'Speech API unavailable';
     return;
   }
 
   const recognition = new SpeechRecognition();
   recognition.continuous = false;
   recognition.interimResults = false;
+  voiceRuntime.recognition = recognition;
 
-  let listening = false;
+  const toggleListening = () => {
+    if (!settings.voiceEnabled || !voiceRuntime.recognition) return;
 
-  elements.voiceButton.addEventListener('click', () => {
-    if (!settings.voiceEnabled) return;
-
-    if (listening) {
-      recognition.stop();
+    if (voiceRuntime.isListening) {
+      voiceRuntime.recognition.stop();
       return;
     }
 
     const language = languageLayer.resolveLanguage(elements.input.value || '');
-    recognition.lang = language === 'th' ? 'th-TH' : 'en-US';
-    recognition.start();
-  });
+    voiceRuntime.recognition.lang = language === 'th' ? 'th-TH' : 'en-US';
+    voiceRuntime.recognition.start();
+  };
+
+  elements.voiceCaptureButton.addEventListener('click', toggleListening);
+  elements.voiceButton.addEventListener('click', toggleListening);
 
   recognition.onstart = () => {
-    listening = true;
-    elements.voiceButton.setAttribute('aria-pressed', 'true');
-    setStatus(settings.sessionLanguageMemory === 'th' ? 'กำลังฟังเสียง' : 'Listening');
+    setVoiceUiState(true);
   };
 
   recognition.onresult = (event) => {
     const transcript = event.results?.[0]?.[0]?.transcript?.trim();
     if (!transcript) return;
     elements.input.value = transcript;
-    elements.form.requestSubmit();
+    submitIntent(transcript);
   };
 
   recognition.onerror = () => {
-    setStatus(settings.sessionLanguageMemory === 'th' ? 'เสียงไม่พร้อม ใช้การพิมพ์แทน' : 'Voice unavailable, type instead');
+    setStatus(localizedUI('voiceUnavailable'));
   };
 
   recognition.onend = () => {
-    listening = false;
-    elements.voiceButton.setAttribute('aria-pressed', 'false');
+    setVoiceUiState(false);
   };
 }
 
-function onComposerSubmit(event) {
-  event.preventDefault();
-  const text = elements.input.value.trim();
-  if (!text) return;
+function openSettingsPanel() {
+  elements.settingsPanel.hidden = false;
+  elements.settingsToggle.setAttribute('aria-expanded', 'true');
+  document.getElementById('intent-input').focus();
+}
 
-  applySubmissionState(true);
-  setStatus(settings.sessionLanguageMemory === 'th' ? 'กำลังตีความ' : 'Interpreting');
-
-  const language = languageLayer.resolveLanguage(text);
-  const response = routeLightResponse(text, language);
-
-  manifestationEngine.manifestText(response.text, response.mood);
-  setReadableFallback(response.text);
-  setStatus(response.status);
-
-  pushSessionEvent({
-    input: text,
-    language,
-    response,
-  });
-
-  elements.input.value = '';
-  applySubmissionState(false);
+function closeSettingsPanel() {
+  elements.settingsPanel.hidden = true;
+  elements.settingsToggle.setAttribute('aria-expanded', 'false');
+  elements.settingsToggle.focus();
 }
 
 function bindSettingsPanel() {
   elements.settingsToggle.addEventListener('click', () => {
-    const willOpen = elements.settingsPanel.hidden;
-    elements.settingsPanel.hidden = !willOpen;
-    elements.settingsToggle.setAttribute('aria-expanded', String(willOpen));
-    if (willOpen) document.getElementById('api-base').focus();
+    if (elements.settingsPanel.hidden) {
+      openSettingsPanel();
+      return;
+    }
+    closeSettingsPanel();
   });
 
-  elements.closeSettings.addEventListener('click', () => {
-    elements.settingsPanel.hidden = true;
-    elements.settingsToggle.setAttribute('aria-expanded', 'false');
-    elements.settingsToggle.focus();
+  elements.closeSettings.addEventListener('click', closeSettingsPanel);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !elements.settingsPanel.hidden) {
+      closeSettingsPanel();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (elements.settingsPanel.hidden) return;
+    const target = event.target;
+    const clickedInsidePanel = elements.settingsPanel.contains(target);
+    const clickedToggle = elements.settingsToggle.contains(target);
+    if (!clickedInsidePanel && !clickedToggle) {
+      closeSettingsPanel();
+    }
   });
 }
 
 function bootstrap() {
+  bindInputEvents();
   bindSettings();
   bindSettingsPanel();
   initVoice();
 
-  elements.form.addEventListener('submit', onComposerSubmit);
   window.addEventListener('resize', manifestationEngine.resize);
 
   manifestationEngine.resize();
-  setStatus('พร้อมฟัง');
-  manifestationEngine.manifestText('สวัสดี — Hello', 'greeting');
-  setReadableFallback('สวัสดี — Hello');
+  const bootLanguage = languageLayer.resolveLanguage('');
+  settings.sessionLanguageMemory = bootLanguage;
+  setStatus(localizedUI('ready'));
+  manifestationEngine.manifestText(bootLanguage === 'th' ? 'สวัสดี' : 'Hello', 'greeting');
+  setReadableFallback(bootLanguage === 'th' ? 'สวัสดี' : 'Hello');
   requestAnimationFrame(manifestationEngine.render);
 }
 

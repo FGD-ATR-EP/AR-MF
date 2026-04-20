@@ -1,110 +1,150 @@
 # Aetherium Manifest
 
-## English Documentation
+Aetherium Manifest is a **light-native cognition runtime**: intent is interpreted into deterministic light/particle manifestation with a governor-first safety boundary.
 
-### Overview
-Aetherium Manifest is the frontend expression layer of the Aetherium ecosystem. It visualizes AI intent, confidence, and runtime state through light, motion, and abstract form.
-
-### Architecture
-- **AETHERIUM-GENESIS (Backend):** reasoning core, intent generation, telemetry interpretation.
-- **Aetherium Manifest (Frontend):** visual embodiment and interaction runtime.
-- **Transport:** API/WebSocket contract over AetherBus.
-
-### Current Runtime Capabilities
-- Real-time particle/shape rendering mapped from intent vectors.
-- Voice interaction pipeline (VAD mock + STT mock + intent mapping).
-- Adaptive quality tier and frame-rate management.
-- Accessibility-focused controls with visual microphone feedback.
-- Window manager for all HUD panels:
-  - close (✕) per panel
-  - reopen from Settings > Panels
-  - drag-to-move and resize
-- Settings with 5 tabs: `Display`, `Panels`, `Links`, `Language`, `Voice`.
-- External URL analysis entry point in Settings (`Analyze URL`).
-- Event-driven command bus + telemetry counters + delta-state patch helper.
-- Upgraded to an installable web application (PWA) with manifest, service worker, and core assets.
-
-### API Gateway (Prototype)
-The `api_gateway/` folder includes a sample Cognitive DSL gateway:
-- `POST /api/v1/cognitive/emit`
-- `POST /api/v1/cognitive/validate`
-- `GET /health`
-- `WS /ws/cognitive-stream`
-
-### AetherBusExtreme Utilities
-`api_gateway/aetherbus_extreme.py` includes:
-- Zero-copy socket send (`memoryview`) + async-safe send helper (`loop.sock_sendall`)
-- Immutable envelope models
-- Async queue bus with backpressure
-- MsgPack helpers
-- NATS async manager
-- State convergence processor
-
-### Run Locally
-```bash
-python3 -m http.server 4173
-# open http://localhost:4173
-```
-
-### CI/CD Note
-- GitHub/Azure automation that was not in active use has been removed from this repository.
-- Deployment and quality checks should be run manually or from an external CI system outside this repo.
-- If branch protection requires status checks, update required checks in GitHub repository settings to match your active process.
-- See [remove-unused-platform-automation.md](docs/repo-maintenance/remove-unused-platform-automation.md) for more details.
-
-### Recommended Next Steps
-- Move mutable runtime state to Redis (metrics counters, telemetry cache, and websocket room membership) for multi-worker consistency.
-- Add signed outbound proxy policy (HMAC request intent + per-tenant allowlist) to harden enterprise SSRF controls.
-- Build a contract-fuzz pipeline: property-based payload generators + mutation corpus for schema regression stress tests.
-- Add persisted TSDB backend (InfluxDB/TimescaleDB) with retention and downsampling policies.
-- Add proxy allowlist/denylist + content-type and size guardrails for stronger SSRF safety.
-- Add locale QA checks (missing-key scanner + pseudolocale) in CI.
-- Add voice A/B routing and collect WER/latency metrics by language-region cohort.
-- Add CRDT merge (Yjs/Automerge) for conflict-free collaborative editing beyond simple delta updates.
+## What changed in this iteration
+- Home is now a **pure light-native scene** (canvas + Settings entry only).
+- Structural UI (composer, runtime controls, voice, connection, export) is moved into **Settings**.
+- Input event handling was modernized to correctly support **IME composition** (Thai/Japanese/etc.) using composition lifecycle + `beforeinput/input` paths, and now blocks accidental Enter-submit from browser IME process-key events (e.g. `keyCode=229`).
 
 ---
 
-## เอกสารภาษาไทย
+## Architecture
 
-### ภาพรวม
-Aetherium Manifest คือเลเยอร์แสดงผลฝั่ง Frontend ของระบบ Aetherium โดยแปลงเจตนาและสถานะของ AI ให้เป็นภาพเคลื่อนไหวเชิงนามธรรม
+### Runtime planes
+1. **First-use surface (static frontend)**
+   - `index.html`
+   - `clean-first-surface.css`
+   - `clean-first-surface.js`
+   - `first_use_surface/*`
 
-### โครงสร้างระบบ
-- **AETHERIUM-GENESIS (Backend):** คิด วิเคราะห์ และสร้าง intent
-- **Aetherium Manifest (Frontend):** แสดงผลและโต้ตอบผู้ใช้
-- **การเชื่อมต่อ:** ผ่าน API/WebSocket บน AetherBus
+2. **Gateway plane (FastAPI / WS / distributed adapters)**
+   - `api_gateway/` and top-level gateway helpers
+   - request/validation endpoints for emit/validate
 
-### ความสามารถปัจจุบัน
-- ระบบแสดงผลแบบเรียลไทม์ด้วยอนุภาคและรูปทรงตาม intent
-- Voice pipeline (VAD/STT แบบ mock) + intent mapping
-- ปรับคุณภาพกราฟิกตามเครื่องและจัดการเฟรมเรต
-- ปุ่มควบคุมที่เป็นมิตรต่อการเข้าถึง (Accessibility)
-- HUD ทุกหน้าต่างมีปุ่มปิด เปิดคืนได้จาก Settings และลาก/ย่อ-ขยายได้
-- Settings แบ่ง 5 แท็บ: `Display`, `Panels`, `Links`, `Language`, `Voice`
-- มีช่องวิเคราะห์ลิงก์ URL ภายนอก
-- มีโครง telemetry + event bus + delta-state สำหรับต่อยอด
-- ยกระดับเป็น installable web application (PWA) พร้อม manifest, service worker และ asset แกนหลัก
+3. **Governor plane (canonical control boundary)**
+   - `governor/`
+   - deny-by-default runtime mutation authority
 
-### API Gateway (ต้นแบบ)
-โฟลเดอร์ `api_gateway/` มีตัวอย่าง Cognitive DSL gateway พร้อม endpoint สำหรับ emit/validate/health/websocket
+4. **Contracts + tooling plane**
+   - JSON Schemas (root + `docs/schemas/`)
+   - contract checker/fuzzer + drift guard (`tools/contracts/`)
+   - semantic/latency benchmarks (`tools/benchmarks/`)
 
-### แนวทางต่อยอด
-- ย้าย mutable runtime state ไปที่ Redis (metrics counters, telemetry cache และสมาชิกห้อง websocket) เพื่อรองรับหลาย worker ได้สม่ำเสมอ
-- เพิ่มนโยบาย signed outbound proxy (HMAC request intent + allowlist ตาม tenant) เพื่อเสริมความปลอดภัย SSRF ระดับองค์กร
-- สร้าง contract-fuzz pipeline ด้วยตัวสร้าง payload เชิง property-based และ mutation corpus สำหรับ stress test schema regression
-- เพิ่ม persisted TSDB backend (InfluxDB/TimescaleDB) พร้อมนโยบาย retention และ downsampling
-- เพิ่ม allowlist/denylist, content-type guardrail และขนาด payload guardrail ใน proxy
-- เพิ่ม locale QA checks ใน CI (missing-key scanner + pseudolocale)
-- เพิ่ม voice A/B routing และเก็บ WER/latency แยกตามภาษาและภูมิภาค
-- เพิ่มกลไก CRDT merge (Yjs/Automerge) สำหรับงาน collaborative editing ที่ซับซ้อนกว่า delta พื้นฐาน
+### Canonical control boundary
+System behavior should preserve this sequence:
+
+`validate → transition → profile_map → clamp → fallback → policy_block → capability_gate → telemetry_log`
+
+This path is the source of truth for safe runtime mutation.
+
+---
+
+## Contracts
+
+Core contracts/schemas in this repo include:
+- `particle-control.schema.json`
+- `lcl_schema.json`
+- `governor/particle-control.schema.json`
+- `governor/scholar_contract_v1.json`
+- `docs/schemas/*.json` (versioned copies/documentation views)
+
+### Contract policy
+- Treat schema changes as **ABI changes**.
+- Maintain compatibility/versioning discipline.
+- Keep runtime governor behavior synchronized with contract evolution.
+
+---
+
+## Runtime flow
+
+### Intent-to-light flow (first-use surface)
+1. User opens Settings and submits text from the Interaction composer.
+2. Language layer resolves language deterministically:
+   - explicit setting → browser locale → char heuristics → optional local detector → session memory
+3. Response orchestrator maps intent class (greeting/question/etc.) to deterministic text+mood.
+4. Manifestation engine renders mood/text into the light scene.
+5. Session audit trail appends event metadata (optional export from Settings).
+
+### Gateway/governor integration flow (full stack)
+1. Emit payload is validated against contract.
+2. Governor applies transition/profile mapping and constraints.
+3. Capability + policy gates enforce deny-by-default behavior.
+4. Runtime output and telemetry are published to consumers.
+
+### Runtime control stages
+`validate → transition → profile_map → clamp → fallback → policy_block → capability_gate → telemetry_log`
+
+- `validate`: schema + semantic checks
+- `transition`: state machine handoff
+- `profile_map`: safe perceptual mapping profile
+- `clamp`: hard caps for energy/particle/control limits
+- `fallback`: deterministic safe degradation path
+- `policy_block`: deny-by-default policy enforcement
+- `capability_gate`: runtime/environment capability checks
+- `telemetry_log`: deterministic observability trail
+
+---
+
+## Grammar (LCL summary)
+
+The Light Control Language (LCL) shape is defined in `light-control-language.ts` and `lcl_schema.json`.
+
+### High-level grammar-like view
+```txt
+LCL := {
+  version,
+  intent,
+  morphology,
+  motion,
+  optics,
+  content,
+  constraints,
+  source_text,
+  retrieved_formation?,
+  particle_control
+}
+
+intent := create_light_form | create_glyph | create_scene
+optics.color_mode := monochrome | palette | source_radiance
+```
+
+### Key semantic groups
+- **morphology**: form family/symmetry/density/scale/edge softness
+- **motion**: archetype/flow/coherence/turbulence/rhythm/attack/settle
+- **optics**: palette/luminance/glow/trail/color mode
+- **constraints**: max targets/photons/energy hard limits
+- **particle_control**: low-level runtime-safe control envelope
 
 
-## Extension Ideas
-- Move mutable runtime state to Redis (metrics counters, telemetry cache, and websocket room membership) for multi-worker consistency.
-- Add signed outbound proxy policy (HMAC request intent + per-tenant allowlist) to harden enterprise SSRF controls.
-- Build a contract-fuzz pipeline: property-based payload generators + mutation corpus for schema regression stress tests.
-- Add persisted TSDB backend (InfluxDB/TimescaleDB) with retention and downsampling policies.
-- Add proxy allowlist/denylist + content-type and size guardrails for stronger SSRF safety.
-- Add locale QA checks (missing-key scanner + pseudolocale) in CI.
-- Add voice A/B routing and collect WER/latency metrics by language-region cohort.
-- Add CRDT merge (Yjs/Automerge) for conflict-free collaborative editing beyond simple delta updates.
+### Formal grammar references
+- AETH grammar (EBNF): `docs/aeth/spec/grammar.ebnf`
+- AETH semantics/versioning: `docs/aeth/spec/semantics.md`, `docs/aeth/spec/versioning.md`
+- LCL JSON schema: `lcl_schema.json`
+
+---
+
+## Local development & checks
+
+### Recommended minimum before PR
+```bash
+npm run lint
+cd api_gateway && pytest -q
+python3 tools/contracts/contract_checker.py
+```
+
+### Extended verification set
+```bash
+cd api_gateway && pytest -q
+python3 tools/contracts/contract_checker.py
+python3 tools/contracts/contract_fuzz.py
+python3 tools/benchmarks/runtime_semantic_benchmark.py --input tools/benchmarks/runtime_semantic_samples.sample.json
+npx --yes tsx --test test_runtime_governor_psycho_safety.test.ts
+```
+
+---
+
+## Notes
+- Frontend remains static-host friendly; no mandatory bundle step in-repo.
+- Prototype telemetry persistence is intentionally non-durable by default.
+- Production hardening should include persistent telemetry storage, key rotation, and compatibility gates.
