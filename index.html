@@ -12,26 +12,7 @@
     <canvas id="manifestation-canvas" aria-hidden="true"></canvas>
 
     <main class="first-surface" aria-label="Aetherium light-native surface">
-      <button
-        id="settings-toggle"
-        class="icon-btn"
-        type="button"
-        aria-label="เปิดการตั้งค่า"
-        aria-controls="settings-panel"
-        aria-expanded="false"
-      >
-        ⚙
-      </button>
-    </main>
-
-    <aside id="settings-panel" class="settings" aria-label="Settings" hidden>
-      <header class="settings-header">
-        <h2>Settings</h2>
-        <button id="close-settings" class="icon-btn" type="button" aria-label="ปิดการตั้งค่า">✕</button>
-      </header>
-
-      <section>
-        <h3>Interaction</h3>
+      <section class="chat-surface" aria-label="ช่องสนทนาหลัก">
         <p id="ambient-status" class="ambient-status" aria-live="polite">พร้อมฟัง</p>
         <p id="readable-fallback" class="readable-fallback" aria-live="polite"></p>
         <form id="composer" class="composer" aria-label="Composer">
@@ -55,6 +36,26 @@
           <button id="send-btn" type="submit" class="send-btn">ส่ง</button>
         </form>
       </section>
+
+      <button
+        id="settings-toggle"
+        class="icon-btn"
+        type="button"
+        aria-label="เปิดการตั้งค่า"
+        aria-controls="settings-panel"
+        aria-expanded="false"
+      >
+        ⚙
+      </button>
+    </main>
+
+    <aside id="settings-panel" class="settings" aria-label="Settings" hidden>
+      <header class="settings-header">
+        <h2>Settings</h2>
+        <button id="close-settings" class="icon-btn" type="button" aria-label="ปิดการตั้งค่า">✕</button>
+      </header>
+
+      
 
       <section>
         <h3>Connection</h3>

@@ -32,6 +32,20 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+}
+
+.chat-surface {
+  width: min(760px, calc(100vw - 24px));
+  pointer-events: auto;
+  background: linear-gradient(180deg, rgba(12,16,24,0.15), rgba(12,16,24,0.35));
+  border: 1px solid rgba(200,236,255,0.2);
+  border-radius: 18px;
+  padding: 12px;
+  backdrop-filter: blur(8px);
 }
 
 .icon-btn,
@@ -45,8 +59,8 @@ body {
 
 #settings-toggle {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  bottom: 20px;
+  left: 20px;
   z-index: 4;
 }
 
@@ -170,4 +184,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+@media (max-width: 720px) {
+  .first-surface { padding: 12px 12px 18px; }
+  .chat-surface { border-radius: 14px; }
 }

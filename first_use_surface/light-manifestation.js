@@ -61,6 +61,36 @@ export function createLightManifestation(canvas, reducedMotion) {
     reducedMotion,
   };
 
+  const touchField = {
+    x: 0.5,
+    y: 0.5,
+    intensity: 0,
+  };
+
+  function respondToTouch(clientX, clientY, pulse = 0.35) {
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
+    touchField.x = Math.max(0, Math.min(1, clientX / width));
+    touchField.y = Math.max(0, Math.min(1, clientY / height));
+    touchField.intensity = Math.max(touchField.intensity, pulse);
+  }
+
+  function bindTouchInteraction() {
+    const passive = { passive: true };
+    canvas.addEventListener('pointerdown', (event) => respondToTouch(event.clientX, event.clientY, 0.65), passive);
+    canvas.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch' || event.buttons > 0) {
+        respondToTouch(event.clientX, event.clientY, 0.42);
+      }
+    }, passive);
+    canvas.addEventListener('touchstart', (event) => {
+      for (const touch of event.touches) respondToTouch(touch.clientX, touch.clientY, 0.7);
+    }, passive);
+    canvas.addEventListener('touchmove', (event) => {
+      for (const touch of event.touches) respondToTouch(touch.clientX, touch.clientY, 0.48);
+    }, passive);
+  }
+
   function resize() {
     const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     canvas.width = Math.floor(window.innerWidth * dpr);
@@ -129,8 +159,11 @@ export function createLightManifestation(canvas, reducedMotion) {
     const wave = options.reducedMotion ? 0 : Math.sin(ts * 0.00035) * 0.25;
     particles.forEach((particle, index) => {
       if (!options.reducedMotion) {
-        particle.x += particle.vx + wave * 0.00012;
-        particle.y += particle.vy;
+        const dxTouch = touchField.x - particle.x;
+        const dyTouch = touchField.y - particle.y;
+        const touchForce = touchField.intensity * 0.00095 / (1 + (dxTouch * dxTouch + dyTouch * dyTouch) * 38);
+        particle.x += particle.vx + wave * 0.00012 + dxTouch * touchForce;
+        particle.y += particle.vy + dyTouch * touchForce;
         if (particle.x < 0 || particle.x > 1) particle.vx *= -1;
         if (particle.y < 0 || particle.y > 1) particle.vy *= -1;
       }
@@ -139,13 +172,15 @@ export function createLightManifestation(canvas, reducedMotion) {
       const y = particle.y * height;
       const alpha = options.reducedMotion
         ? 0.18
-        : 0.24 + Math.sin(ts * 0.001 + index * 0.16) * 0.08;
+        : 0.24 + Math.sin(ts * 0.001 + index * 0.16) * 0.08 + touchField.intensity * 0.08;
 
       context.fillStyle = `rgba(127,228,255,${clampAlpha(alpha)})`;
       context.beginPath();
       context.arc(x, y, particle.r, 0, Math.PI * 2);
       context.fill();
     });
+
+    touchField.intensity = Math.max(0, touchField.intensity * 0.965 - 0.0022);
 
     if (manifestation.text) {
       const elapsed = Math.max(0, ts - manifestation.startedAt);
@@ -190,10 +225,13 @@ export function createLightManifestation(canvas, reducedMotion) {
     requestAnimationFrame(render);
   }
 
+  bindTouchInteraction();
+
   return {
     manifestText,
     resize,
     render,
     setReducedMotion,
+    respondToTouch,
   };
 }
