@@ -706,9 +706,17 @@ async def proxy_fetch_url(url: str, x_api_key: str | None = Header(None, alias="
         raise HTTPException(status_code=403, detail="URL host is not allowlisted")
     if _is_blocked_proxy_target(parsed.hostname):
         raise HTTPException(status_code=403, detail="URL host resolves to a blocked IP range")
+
+    safe_scheme = parsed.scheme.lower()
+    safe_host = parsed.hostname.lower()
+    safe_port = f":{parsed.port}" if parsed.port is not None else ""
+    safe_path = parsed.path or "/"
+    safe_query = f"?{parsed.query}" if parsed.query else ""
+    safe_url = f"{safe_scheme}://{safe_host}{safe_port}{safe_path}{safe_query}"
+
     try:
         async with httpx.AsyncClient(timeout=6.0, headers={"User-Agent": "AetheriumProxy/1.0"}) as client:
-            response = await client.get(url)
+            response = await client.get(safe_url, follow_redirects=False)
             response.raise_for_status()
             text = response.text[:120_000]
         return {"content_length": len(text), "snippet": " ".join(text.split())[:1200]}
