@@ -389,6 +389,8 @@ async function submitIntent(intent) {
   const text = intent.trim();
   if (!text) return;
 
+  manifestationEngine.manifestText(text, 'answer');
+  setReadableFallback(text);
   applySubmissionState(true);
   setStatus('Intent sent');
 
@@ -460,6 +462,13 @@ function bindInputEvents() {
 
     event.preventDefault();
     elements.form.requestSubmit();
+  });
+
+  elements.input.addEventListener('input', (event) => {
+    if (event.isComposing) return;
+    const preview = elements.input.value.trim();
+    if (!preview) return;
+    manifestationEngine.manifestText(preview, 'answer');
   });
 }
 
