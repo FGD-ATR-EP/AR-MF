@@ -47,6 +47,25 @@ function wrapLines(context, text, maxWidth) {
   return lines.slice(0, 3);
 }
 
+function sampleGlyphPoints(offscreenContext, width, height, step) {
+  const imageData = offscreenContext.getImageData(0, 0, width, height).data;
+  const points = [];
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const pixelIndex = (y * width + x) * 4 + 3;
+      if (imageData[pixelIndex] > 100) {
+        points.push({
+          x: x / width,
+          y: y / height,
+        });
+      }
+    }
+  }
+
+  return points;
+}
+
 export function createLightManifestation(canvas, reducedMotion) {
   const context = canvas.getContext('2d');
   const particles = createParticleField(320);
@@ -116,25 +135,19 @@ export function createLightManifestation(canvas, reducedMotion) {
     offscreenContext.textBaseline = 'middle';
     offscreenContext.fillStyle = '#ffffff';
     offscreenContext.font = `700 ${Math.max(24, Math.min(54, width * 0.075))}px Inter, Sarabun, sans-serif`;
-    offscreenContext.fillText(text, width * 0.5, height * 0.54);
+    const wrapped = wrapLines(offscreenContext, text, width * 0.8);
+    const lineHeight = Math.max(34, Math.min(58, width * 0.085));
+    const top = (height * 0.52) - ((wrapped.length - 1) * lineHeight) / 2;
+    wrapped.forEach((line, index) => {
+      offscreenContext.fillText(line, width * 0.5, top + lineHeight * index);
+    });
 
-    const imageData = offscreenContext.getImageData(0, 0, width, height).data;
-    const points = [];
-    const step = options.reducedMotion ? 8 : 6;
-
-    for (let y = 0; y < height; y += step) {
-      for (let x = 0; x < width; x += step) {
-        const pixelIndex = (y * width + x) * 4 + 3;
-        if (imageData[pixelIndex] > 100) {
-          points.push({
-            x: x / width,
-            y: y / height,
-          });
-        }
-      }
-    }
-
-    manifestation.glyphPoints = points;
+    manifestation.glyphPoints = sampleGlyphPoints(
+      offscreenContext,
+      width,
+      height,
+      options.reducedMotion ? 8 : 5,
+    );
   }
 
   function manifestText(text, mood) {
@@ -187,39 +200,21 @@ export function createLightManifestation(canvas, reducedMotion) {
       const alpha = options.reducedMotion ? 1 : clampAlpha(elapsed / 520);
       const palette = moodPalette(manifestation.mood);
       const centerY = height * 0.43;
-      const fontSize = Math.max(26, Math.min(58, width * 0.047));
-
-      if (!options.reducedMotion && manifestation.glyphPoints.length > 0) {
+      if (manifestation.glyphPoints.length > 0) {
         const glyphWidth = Math.max(420, Math.floor(width * 0.7));
         const glyphHeight = 160;
         const originX = (width - glyphWidth) * 0.5;
         const originY = centerY - glyphHeight * 0.5;
 
-        context.fillStyle = `rgba(${palette.glow},${clampAlpha(alpha * 0.85)})`;
+        context.fillStyle = `rgba(${palette.glow},${clampAlpha(alpha * 0.9)})`;
         manifestation.glyphPoints.forEach((point, index) => {
-          if (index % 2 !== 0) return;
-          const shimmer = Math.sin(ts * 0.007 + index * 0.11) * 0.7;
-          const radius = 1 + Math.max(0, shimmer);
+          const shimmer = options.reducedMotion ? 0 : Math.sin(ts * 0.007 + index * 0.11) * 0.7;
+          const radius = options.reducedMotion ? 1.3 : 1 + Math.max(0, shimmer);
           context.beginPath();
           context.arc(originX + point.x * glyphWidth, originY + point.y * glyphHeight, radius, 0, Math.PI * 2);
           context.fill();
         });
-      }
-
-      context.save();
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.font = `700 ${fontSize}px Inter, Sarabun, sans-serif`;
-      context.shadowColor = `rgba(${palette.glow},0.9)`;
-      context.shadowBlur = options.reducedMotion ? 0 : 22;
-      context.fillStyle = `rgba(${palette.core},${alpha})`;
-      const wrapped = wrapLines(context, manifestation.text, width * 0.72);
-      const lineHeight = fontSize * 1.15;
-      const top = centerY - ((wrapped.length - 1) * lineHeight) / 2;
-      wrapped.forEach((line, index) => {
-        context.fillText(line, width * 0.5, top + lineHeight * index);
-      });
-      context.restore();
+    }
     }
 
     requestAnimationFrame(render);
