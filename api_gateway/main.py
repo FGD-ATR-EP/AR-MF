@@ -711,8 +711,9 @@ async def proxy_fetch_url(url: str, x_api_key: str | None = Header(None, alias="
     safe_host = parsed.hostname.lower()
     safe_port = f":{parsed.port}" if parsed.port is not None else ""
     safe_path = parsed.path or "/"
+    safe_params = f";{parsed.params}" if parsed.params else ""
     safe_query = f"?{parsed.query}" if parsed.query else ""
-    safe_url = f"{safe_scheme}://{safe_host}{safe_port}{safe_path}{safe_query}"
+    safe_url = f"{safe_scheme}://{safe_host}{safe_port}{safe_path}{safe_params}{safe_query}"
 
     try:
         async with httpx.AsyncClient(timeout=6.0, headers={"User-Agent": "AetheriumProxy/1.0"}) as client:
